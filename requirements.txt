@@ -1,4 +1,5 @@
 aiohttp==3.9.5
+aiolimiter==1.1.0
 base58==2.1.1
 construct==2.10.68
 httpx==0.27.0
