@@ -1,0 +1,13 @@
+# Python cache files
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+
+# Data and cache files
+data/
+*.json
+
+# Used for Google Gemini queries
+all.txt
