@@ -254,16 +254,15 @@ async def close_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 def main() -> None:
     """Run the bot."""
-    with open("data/t_secret", "r") as token:
-        application = (
-            Application
-            .builder()
-            .token(config.telegram_bot_token)
-            .concurrent_updates(
-                UserSequentialUpdateProcessor(10)
-            )
-            .build()
+    application = (
+        Application
+        .builder()
+        .token(config.telegram_bot_token)
+        .concurrent_updates(
+            UserSequentialUpdateProcessor(10)
         )
+        .build()
+    )
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],

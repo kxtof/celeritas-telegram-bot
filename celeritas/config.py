@@ -25,6 +25,11 @@ class Config:
             raise FileNotFoundError(f"Neither '{self.config_file}' nor '{self.default_config_file}' found.")
 
     def get(self, key, default=None):
+        # First, try to get the value from an environment variable
+        env_value = os.environ.get(f"CELERITAS_{key.upper()}")
+        if env_value is not None:
+            return env_value
+        # If not found in environment, fall back to the config file
         return self.config.get(key, default)
 
     @property
@@ -42,5 +47,9 @@ class Config:
     @property
     def platform_fee_pubkey(self):
         return self.get('platform_fee_pubkey')
+
+    @property
+    def mongodb_url(self):
+        return self.get('mongodb_url')
 
 config = Config()

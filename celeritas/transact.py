@@ -2,6 +2,7 @@ import httpx
 import base64
 import os
 from celeritas.telegram_bot.utils import get_blockhash
+from celeritas.config import config
 from celeritas.db import TokenDB
 from celeritas.constants import (
     client,
@@ -88,10 +89,10 @@ class Transact:
         )
         if platform_fee_pubkey:
             self.platform_fee_pubkey = Pubkey.from_string(platform_fee_pubkey)
-        elif os.path.exists('data/platform_fee_pubkey'):
-            with open('data/platform_fee_pubkey', 'r') as f:
-                self.platform_fee_pubkey = Pubkey.from_string(f.read().strip())
-        
+        try:
+            self.platform_fee_pubkey = Pubkey.from_string(config.platform_fee_pubkey)
+        except:
+            raise Exception("Missing platform fee pubkey!")
 
     async def _get_jupiter_quote(
         self, input_mint, output_mint, amount, slippage_bps=50, max_accounts=None

@@ -11,4 +11,5 @@ data/
 !config.default.json
 
 # Used for Google Gemini queries
+# ``find celeritas/ -name '*.py' -type f -exec sh -c 'printf "\n===== %s =====\n\n" "$1"; cat "$1"' _ {} \; > all.txt``
 all.txt

@@ -2,6 +2,7 @@ import pymongo
 import aiohttp
 import time
 from celeritas.user import User
+from celeritas.config import config
 from celeritas.user_settings import User_settings
 from celeritas.get_token_metadata import get_metadata, get_token_supply
 from celeritas.telegram_bot.utils import sol_dollar_value
@@ -17,7 +18,7 @@ from typing import List
 
 
 class UserDB:
-    def __init__(self, host: str = "mongodb://localhost:27017/"):
+    def __init__(self, host: str = config.mongodb_url):
         self.client = pymongo.MongoClient(host)
         self.users = self.client["celeritas"]["users"]
         self.users.create_index([("sniping.wallet", pymongo.ASCENDING)])

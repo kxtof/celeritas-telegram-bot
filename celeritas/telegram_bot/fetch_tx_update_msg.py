@@ -5,19 +5,18 @@ from telegram.ext import ContextTypes
 from solders.signature import Signature
 from solders.pubkey import Pubkey
 from solana.rpc.async_api import AsyncClient
+from celeritas.config import config
 from celeritas.constants import LAMPORTS_PER_SOL, RPC_URL
 from celeritas.telegram_bot.utils import sol_dollar_value
 from celeritas.telegram_bot.utils import nice_float_price_format as nfpf
 from celeritas.db import UserDB
 
-if os.path.exists("data/platform_fee_pubkey"):
-    with open("data/platform_fee_pubkey", "r") as f:
-        PLATFORM_FEE_PUBKEY = Pubkey.from_string(f.read().strip())
-else:
-    raise Exception("Missing Platform Fee Pubkey! Add it to data/platform_fee_pubkey")
+try:
+    PLATFORM_FEE_PUBKEY = Pubkey.from_string(config.platform_fee_pubkey)
+except:
+    raise Exception("Missing platform fee pubkey!")
 
 db = UserDB()
-
 
 async def fetch_transaction(tx_signature: Signature) -> dict:
     async with AsyncClient(RPC_URL) as client:
