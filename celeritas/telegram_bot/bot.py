@@ -14,6 +14,7 @@ from telegram.ext import (
 )
 from celeritas.db import UserDB
 from celeritas.user import User
+from celeritas.config import config
 from celeritas.telegram_bot.callbacks import *
 from celeritas.telegram_bot.utils import utc_time_now, sol_dollar_value
 from celeritas.telegram_bot.utils import nice_float_price_format as nfpf
@@ -257,7 +258,7 @@ def main() -> None:
         application = (
             Application
             .builder()
-            .token(token.read())
+            .token(config.telegram_bot_token)
             .concurrent_updates(
                 UserSequentialUpdateProcessor(10)
             )

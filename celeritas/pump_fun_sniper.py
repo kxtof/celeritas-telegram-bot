@@ -10,6 +10,7 @@ from celeritas.transact import Transact
 from celeritas.constants import SOLANA_WS_URL
 from celeritas.telegram_bot.fetch_tx_update_msg import schedule_tx_update
 from celeritas.telegram_bot.utils import nice_float_price_format as nfpf
+from celeritas.config import config
 import logging
 
 # Enable logging
@@ -23,13 +24,12 @@ logger = logging.getLogger(__name__)
 # Pump.fun mint authority public key
 MINT_AUTHORITY_PUBKEY = "TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM"
 
-with open("data/t_secret", "r") as token:
-    application = (
-        Application
-        .builder()
-        .token(token.read())
-        .build()
-    )
+application = (
+    Application
+    .builder()
+    .token(config.telegram_bot_token)
+    .build()
+)
 
 # Database
 db = UserDB()

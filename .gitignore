@@ -8,6 +8,7 @@ __pycache__/
 # Data and cache files
 data/
 *.json
+!config.default.json
 
 # Used for Google Gemini queries
 all.txt

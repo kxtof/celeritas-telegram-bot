@@ -99,7 +99,7 @@ db.update_attribute(7430379535, "sniping", [])
 #user = db.get_user(7430379535)
 #print(user.holdings)
 
-from celeritas.pump_fun_sniper import main
-asyncio.run(main())
+#from celeritas.pump_fun_sniper import main
+#asyncio.run(main())
 
 main()

@@ -1,9 +1,10 @@
 from solana.rpc.api import Client
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
+from celeritas.config import config
 
-RPC_URL = "https://young-young-pallet.solana-mainnet.quiknode.pro/6886f13de49844f1e4fc08ca009e3ae4c1ee89fa/"
-SOLANA_WS_URL = "wss://young-young-pallet.solana-mainnet.quiknode.pro/6886f13de49844f1e4fc08ca009e3ae4c1ee89fa/"
+RPC_URL = config.solana_rpc_url
+SOLANA_WS_URL = config.solana_ws_url
 PUBLIC_RPC_URL = "https://api.mainnet-beta.solana.com"
 client = Client(RPC_URL)
 aclient = AsyncClient(RPC_URL)
