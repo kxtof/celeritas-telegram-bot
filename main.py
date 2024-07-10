@@ -1,4 +1,5 @@
 import time
+
 import asyncio
 import json
 from celeritas.db import UserDB, TokenDB
@@ -64,7 +65,7 @@ users = [
         referrer=2,
     )
 ]
-#[db.add_user(user) for user in users]
+#[db.add_user(user, override=True) for user in users]
 
 #db.update_sol_balance(7430379535)
 
@@ -91,8 +92,8 @@ for key, position in db.update_user_positions(7430379535, get_prices=True).items
     print()
 """
 #print(db.update_user_positions(7430379535))
-db.update_attribute(1564617170, "transactions", [])
-db.update_attribute(7430379535, "sniping", [])
+#db.update_attribute(1564617170, "transactions", [])
+#db.update_attribute(7430379535, "sniping", [])
 #db.update_user_holdings(7430379535)
 
 

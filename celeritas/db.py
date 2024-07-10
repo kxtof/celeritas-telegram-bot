@@ -208,7 +208,7 @@ class TokenDB:
         "price_change": {"5m": 0.0, "30m": 0.0, "24h": 0.0}
     }
 
-    def __init__(self, host: str = "mongodb://localhost:27017/"):
+    def __init__(self, host: str = config.mongodb_url):
         self.client = pymongo.MongoClient(host)
         self.tokens = self.client["celeritas"]["tokens"]
         token = {

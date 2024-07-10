@@ -9,5 +9,4 @@ python-telegram-bot==21.3
 Requests==2.32.3
 solana==0.34.2
 solders==0.21.0
-spl==0.0.1.dev0
 websockets==10.4

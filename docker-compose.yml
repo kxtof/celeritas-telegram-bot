@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: celeritas_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo_data:/data/db
+  bot:
+    build: .
+    volumes:
+      - ./data:/app/data
+    network_mode: "host"
+    command: python main.py
+
+volumes:
+  mongo_data:
