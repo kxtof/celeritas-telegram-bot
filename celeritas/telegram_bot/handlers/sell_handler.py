@@ -1,30 +1,29 @@
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-    ConversationHandler,
-    MessageHandler,
-    filters,
-)
-from celeritas.telegram_bot.utils import (
-    delete_messages,
-    edit_message,
-    utc_time_now,
-    sol_dollar_value,
-    nice_float_price_format,
-    center_arrow
-)
-from celeritas.db import UserDB, TokenDB
-from celeritas.transact import Transact
+
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram import Update
+from telegram.ext import CallbackQueryHandler
+from telegram.ext import CommandHandler
+from telegram.ext import ContextTypes
+from telegram.ext import ConversationHandler
+from telegram.ext import filters
+from telegram.ext import MessageHandler
+
+from celeritas.db import token_db
+from celeritas.db import user_db
 from celeritas.telegram_bot.callbacks import *
 from celeritas.telegram_bot.fetch_tx_update_msg import schedule_tx_update
+from celeritas.telegram_bot.utils import center_arrow
+from celeritas.telegram_bot.utils import delete_messages
+from celeritas.telegram_bot.utils import edit_message
+from celeritas.telegram_bot.utils import nice_float_price_format
+from celeritas.telegram_bot.utils import sol_dollar_value
+from celeritas.telegram_bot.utils import utc_time_now
+from celeritas.transact import Transact
+
 logger = logging.getLogger(__name__)
 
-# Database
-db = UserDB()
-tokendb = TokenDB()
 
 async def generate_token_sell_keyboard(user, token, options) -> InlineKeyboardMarkup:
     sell_amounts = user.settings.sell_amounts
@@ -35,75 +34,87 @@ async def generate_token_sell_keyboard(user, token, options) -> InlineKeyboardMa
     keyboard = [
         [
             InlineKeyboardButton("❌ Close", callback_data=str(CLOSE_TOKEN_SELL)),
-            InlineKeyboardButton("🔄 Refresh", callback_data=f"{REFRESH_TOKEN_SELL}_{token['mint']}")
+            InlineKeyboardButton("🔄 Refresh", callback_data=f"{REFRESH_TOKEN_SELL}_{token['mint']}"),
         ],
-        #[InlineKeyboardButton("--- Percentage to sell ---", callback_data="none")],
+        # [InlineKeyboardButton("--- Percentage to sell ---", callback_data="none")],
         [
             InlineKeyboardButton(
                 f"{'🔵 ' if p == percentage_to_sell else ''}{p}%",
-                callback_data=f"{AMOUNT_TO_SELL}_{p}"
-            ) for p in sell_amounts
+                callback_data=f"{AMOUNT_TO_SELL}_{p}",
+            )
+            for p in sell_amounts
         ],
         [
             InlineKeyboardButton(
-                f"🔵 {percentage_to_sell}%" if percentage_to_sell not in sell_amounts else "Custom % ✏️",
-                callback_data=str(AMOUNT_TO_SELL_CUSTOM)
+                (f"🔵 {percentage_to_sell}%" if percentage_to_sell not in sell_amounts else "Custom % ✏️"),
+                callback_data=str(AMOUNT_TO_SELL_CUSTOM),
             )
         ],
-        #[InlineKeyboardButton("--- Slippage to use ---", callback_data="none")],
+        # [InlineKeyboardButton("--- Slippage to use ---", callback_data="none")],
         [
             InlineKeyboardButton(
                 f"{'🔵 ' if base_slippage == slippage else ''}{base_slippage}%",
-                callback_data=f"{SET_BASE_SLIPPAGE}_{base_slippage}"
+                callback_data=f"{SET_BASE_SLIPPAGE}_{base_slippage}",
             ),
             InlineKeyboardButton(
                 f"🔵 {slippage}%" if slippage != base_slippage else "Custom % ✏️",
-                callback_data=str(SET_CUSTOM_SLIPPAGE)
-            )
+                callback_data=str(SET_CUSTOM_SLIPPAGE),
+            ),
         ],
-        [InlineKeyboardButton("SELL", callback_data=str(EXECUTE_SELL))]
+        [InlineKeyboardButton("SELL", callback_data=str(EXECUTE_SELL))],
     ]
 
     return InlineKeyboardMarkup(keyboard)
 
 
-async def sell_token(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, new=False, token_mint=None
-) -> int:
+async def sell_token(update: Update, context: ContextTypes.DEFAULT_TYPE, new=False, token_mint=None) -> int:
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
 
-    user = db.get_user(user_id)
+    user = user_db.get_user(user_id)
     if not token_mint:
         token_mint = query.data.split("_")[1]
-    token = await tokendb.add_token(token_mint)
-    
+    token = await token_db.add_token(token_mint)
+
     # The user shouldn't get here if there are no tokens of this kind in his wallet.
     position = user.positions.get(
         token_mint,
-        {"balance": 0, "avg_entry": None, "n_buys": None, "n_sells": None, "pnl_usd": None, "pnl_sol": None}
+        {
+            "balance": 0,
+            "avg_entry": None,
+            "n_buys": None,
+            "n_sells": None,
+            "pnl_usd": None,
+            "pnl_sol": None,
+        },
     )
-    
+
     if new:
         options = {
             "percentage_to_sell": user.settings.sell_amounts[0],
             "slippage": user.settings.sell_slippage,
-            "symbol": token['symbol'],
+            "symbol": token["symbol"],
         }
         context.user_data[f"sell_message_options_{token_mint}"] = options
     else:
-        options = context.user_data.get(f"sell_message_options_{token_mint}", {
-            "percentage_to_sell": user.settings.sell_amounts[0],
-            "slippage": user.settings.sell_slippage,
-            "symbol": token['symbol'],
-        })
+        options = context.user_data.get(
+            f"sell_message_options_{token_mint}",
+            {
+                "percentage_to_sell": user.settings.sell_amounts[0],
+                "slippage": user.settings.sell_slippage,
+                "symbol": token["symbol"],
+            },
+        )
 
     text = await generate_token_sell_text(user, token, position, options)
     reply_markup = await generate_token_sell_keyboard(user, token, options)
     message_func = query.message.reply_text if new else query.edit_message_text
     message = await message_func(
-        text=text, reply_markup=reply_markup, parse_mode="HTML", disable_web_page_preview=not user.settings.chart_previews
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode="HTML",
+        disable_web_page_preview=not user.settings.chart_previews,
     )
     context.user_data[message.message_id] = token_mint
     context.user_data[f"sell_message_{token_mint}"] = message.message_id
@@ -116,31 +127,29 @@ async def generate_token_sell_text(user, token, position, options):
     t_mint, t_name = token["mint"], token["name"]
 
     bd_progress = get_bonding_curve_progress(token)
-    bonding_curve_text = (
-        generate_bonding_curve_text(bd_progress, t_mint) if bd_progress is not None else ""
-    )
+    bonding_curve_text = generate_bonding_curve_text(bd_progress, t_mint) if bd_progress is not None else ""
     token_link = (
         f"https://pump.fun/{t_mint}"
-        if token["is_pump_fun"] and not token['pump_fun_data']['bonding_curve_complete']
+        if token["is_pump_fun"] and not token["pump_fun_data"]["bonding_curve_complete"]
         else f"https://dexscreener.com/solana/{t_mint}?maker={user.wallet_public}"
     )
 
-    tokens_to_sell = options['percentage_to_sell']/100*position['balance']
-    tokens_to_sell_dollar_value = tokens_to_sell*token['price_dollars']
-    price_impact_estimate = tokens_to_sell_dollar_value/token['market_cap_dollars']
-    sol_out_dollar_value_estimate = tokens_to_sell_dollar_value*max(1-price_impact_estimate, 0.05)
-    sol_out_estimate = sol_out_dollar_value_estimate/sol_dollar_value()
-    
-    nfpf = nice_float_price_format    
+    tokens_to_sell = options["percentage_to_sell"] / 100 * position["balance"]
+    tokens_to_sell_dollar_value = tokens_to_sell * token["price_dollars"]
+    price_impact_estimate = tokens_to_sell_dollar_value / token["market_cap_dollars"]
+    sol_out_dollar_value_estimate = tokens_to_sell_dollar_value * max(1 - price_impact_estimate, 0.05)
+    sol_out_estimate = sol_out_dollar_value_estimate / sol_dollar_value()
+
+    nfpf = nice_float_price_format
     top_line = f"{nfpf(tokens_to_sell)} {t_symbol} | ${nfpf(tokens_to_sell_dollar_value, underline=True)}"
     bottom_line = f"{nfpf(sol_out_estimate)} SOL | ${nfpf(sol_out_dollar_value_estimate, underline=True)}"
     transaction_display = center_arrow(top_line, bottom_line)
 
-    avg_entry_usd = position.get('avg_entry_usd', None)
-    unrealized_pnl_usd = position.get('unrealized_pnl_usd', 0)
-    unrealized_pnl_sol = position.get('unrealized_pnl_sol', 0)
-    unrealized_pnl_percentage_usd = position.get('unrealized_pnl_percentage_usd', 0)
-    unrealized_pnl_percentage_sol = position.get('unrealized_pnl_percentage_sol', 0)
+    avg_entry_usd = position.get("avg_entry_usd", None)
+    unrealized_pnl_usd = position.get("unrealized_pnl_usd", 0)
+    unrealized_pnl_sol = position.get("unrealized_pnl_sol", 0)
+    unrealized_pnl_percentage_usd = position.get("unrealized_pnl_percentage_usd", 0)
+    unrealized_pnl_percentage_sol = position.get("unrealized_pnl_percentage_sol", 0)
     return (
         f"<b>Sell ${t_symbol} - ({t_name})</b>"
         f'<a href="{token_link}"> 📈</a>\n'
@@ -154,7 +163,7 @@ async def generate_token_sell_text(user, token, position, options):
         f"Avg Entry Price: <code>{f"${nfpf(avg_entry_usd)}" if avg_entry_usd else 'N/A'}</code>\n"
         f"PNL USD: <code>{(lambda pnl, pnl_p: f'{pnl_p:.1f}% (${nfpf(pnl)})' if pnl else 'N/A')(unrealized_pnl_usd, unrealized_pnl_percentage_usd)}</code> {'🟩' if unrealized_pnl_usd is None or unrealized_pnl_usd >= 0 else '🟥'}\n"
         f"PNL SOL: <code>{(lambda pnl, pnl_p: f'{pnl_p:.1f}% ({nfpf(pnl)} SOL)' if pnl else 'N/A')(unrealized_pnl_sol, unrealized_pnl_percentage_sol)}</code> {'🟩' if unrealized_pnl_sol is None or unrealized_pnl_sol >= 0 else '🟥'}\n\n"
-        #f"<u>Transaction</u>:\n"
+        # f"<u>Transaction</u>:\n"
         f"<pre>{transaction_display}</pre>\n\n"
         f"Price Impact: <b>{price_impact_estimate*100:.2f}%</b>\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
@@ -175,6 +184,7 @@ def generate_bonding_curve_text(bd_progress, t_mint):
         f"<b>{bd_progress:.2f}%</b>\n{progress_bar(bd_progress, 23)}\n\n"
     )
 
+
 def progress_bar(progress, length):
     if progress < 0:
         progress = 0
@@ -193,14 +203,15 @@ def progress_bar(progress, length):
         bar += characters[0] * (length - full_blocks - 1)
     return bar
 
+
 async def sell_token_new(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    db.update_user_positions(update.effective_user.id, get_prices=True)
+    user_db.update_user_positions(update.effective_user.id, get_prices=True)
     return await sell_token(update, context, new=True)
 
 
 async def refresh_token_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await tokendb.update_price(update.callback_query.data.split("_")[1])
-    db.update_user_positions(update.effective_user.id, update_holdings=True, get_prices=True)
+    await token_db.update_price(update.callback_query.data.split("_")[1])
+    user_db.update_user_positions(update.effective_user.id, update_holdings=True, get_prices=True)
     return await sell_token(update, context, new=False)
 
 
@@ -219,13 +230,18 @@ async def set_option(update: Update, context: ContextTypes.DEFAULT_TYPE, option:
     context.user_data[f"sell_message_options_{mint}"][option] = percentage
     return await sell_token(update, context, new=False, token_mint=mint)
 
+
 async def set_amount_to_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return await set_option(update, context, "percentage_to_sell")
+
 
 async def set_base_slippage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return await set_option(update, context, "slippage")
 
-async def prompt_custom_input(update: Update, context: ContextTypes.DEFAULT_TYPE, option: str, prompt: str, next_state: int) -> int:
+
+async def prompt_custom_input(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, option: str, prompt: str, next_state: int
+) -> int:
     query = update.callback_query
     await query.answer()
     message = await query.message.reply_text(text=prompt)
@@ -233,11 +249,18 @@ async def prompt_custom_input(update: Update, context: ContextTypes.DEFAULT_TYPE
     context.user_data["last_mint"] = context.user_data[query.message.message_id]
     return next_state
 
+
 async def set_custom_slippage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    return await prompt_custom_input(update, context, "slippage", "Please enter your custom slippage %:", CUSTOM_SLIPPAGE)
+    return await prompt_custom_input(
+        update, context, "slippage", "Please enter your custom slippage %:", CUSTOM_SLIPPAGE
+    )
+
 
 async def set_custom_amount_to_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    return await prompt_custom_input(update, context, "percentage_to_sell", "Please enter your custom %:", CUSTOM_PERCENTAGE)
+    return await prompt_custom_input(
+        update, context, "percentage_to_sell", "Please enter your custom %:", CUSTOM_PERCENTAGE
+    )
+
 
 async def process_custom_input(update: Update, context: ContextTypes.DEFAULT_TYPE, option: str) -> int:
     user_id = update.effective_user.id
@@ -249,15 +272,13 @@ async def process_custom_input(update: Update, context: ContextTypes.DEFAULT_TYP
             percentage = min(100, percentage)
 
         token_mint = context.user_data["last_mint"]
-        user = db.get_user(user_id)
+        user = user_db.get_user(user_id)
         position = user.positions[token_mint]
-        token = await tokendb.get_token(token_mint)
+        token = await token_db.get_token(token_mint)
 
         context.user_data[f"sell_message_options_{token_mint}"][option] = percentage
         options = context.user_data[f"sell_message_options_{token_mint}"]
-        reply_markup = await generate_token_sell_keyboard(
-            user, token, options
-        )
+        reply_markup = await generate_token_sell_keyboard(user, token, options)
         await delete_messages(
             context,
             chat_id,
@@ -276,8 +297,10 @@ async def process_custom_input(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("Invalid input. Please enter a valid percentage.")
         return CUSTOM_SLIPPAGE if option == "slippage" else CUSTOM_PERCENTAGE
 
+
 async def custom_slippage_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return await process_custom_input(update, context, "slippage")
+
 
 async def custom_percentage_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return await process_custom_input(update, context, "percentage_to_sell")
@@ -287,7 +310,7 @@ async def execute_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     query = update.callback_query
     await query.answer()
     user_id = update.effective_user.id
-    user = db.get_user(user_id)
+    user = user_db.get_user(user_id)
 
     mint = context.user_data[query.message.message_id]
     options = context.user_data[f"sell_message_options_{mint}"]
@@ -299,9 +322,7 @@ async def execute_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             "<b>You don't have any tokens of this mint in your wallet!</b>\n"
             "Contact support if you think there is an issue on our side."
         )
-        await query.message.reply_text(
-            text=text, parse_mode="HTML", disable_web_page_preview=True
-        )
+        await query.message.reply_text(text=text, parse_mode="HTML", disable_web_page_preview=True)
         return SELL_TOKEN
 
     if user.settings.confirm_trades:
@@ -316,24 +337,21 @@ async def execute_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         keyboard = [
             [
                 InlineKeyboardButton("✅ Confirm", callback_data=str(CONFIRM_SELL)),
-                InlineKeyboardButton("❌ Cancel", callback_data=str(CANCEL_SELL))
+                InlineKeyboardButton("❌ Cancel", callback_data=str(CANCEL_SELL)),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.message.reply_text(
-            text=confirmation_text,
-            reply_markup=reply_markup,
-            parse_mode="HTML"
-        )
+        await query.message.reply_text(text=confirmation_text, reply_markup=reply_markup, parse_mode="HTML")
         return CONFIRM_SELL
 
     # If no confirmation is needed, proceed with the sale
     return await process_sell(update, context, delete=False)
 
+
 async def process_sell(update: Update, context: ContextTypes.DEFAULT_TYPE, delete=True) -> int:
     query = update.callback_query
     user_id = update.effective_user.id
-    user = db.get_user(user_id)
+    user = user_db.get_user(user_id)
 
     mint = context.user_data["last_mint"]
     options = context.user_data[f"sell_message_options_{mint}"]
@@ -348,37 +366,41 @@ async def process_sell(update: Update, context: ContextTypes.DEFAULT_TYPE, delet
 
     transact = Transact(user.wallet_secret, fee_sol=user.settings.priority_fee)
     quote = await transact.sell_percentage(
-        mint,
-        options['percentage_to_sell'],
-        slippage_bps=int(options['slippage']*100)
+        mint, options["percentage_to_sell"], slippage_bps=int(options["slippage"] * 100)
     )
     txs = await transact.construct_and_send(
         quote,
-        fee=(0.9 if user.referrer else 1) * quote['quote']['token_amount_out']/100 # add transaction fee
+        fee=(0.9 if user.referrer else 1) * quote["quote"]["token_amount_out"] / 100,  # add transaction fee
     )
     text = (
-        f"🚀 <b>Sell order for {options['percentage_to_sell']}% sent!</b>\n\n"
-        f'Transaction details: <a href="https://solscan.io/tx/{txs}">View on Solscan</a>\n'
-        f"Slippage: <b>{options['slippage']}%</b>\n\n"
-        f"<i>Waiting for Tx Confirmation...</i>"
-    ) if txs else (
-        f"<b>Failed fetching or sending transaction!</b>\n"
-        "Contact support if you believe this to be an issue."
+        (
+            f"🚀 <b>Sell order for {options['percentage_to_sell']}% sent!</b>\n\n"
+            f'Transaction details: <a href="https://solscan.io/tx/{txs}">View on Solscan</a>\n'
+            f"Slippage: <b>{options['slippage']}%</b>\n\n"
+            f"<i>Waiting for Tx Confirmation...</i>"
+        )
+        if txs
+        else (
+            f"<b>Failed fetching or sending transaction!</b>\n"
+            "Contact support if you believe this to be an issue."
+        )
     )
 
-    await message.edit_text(
-        text=text, parse_mode="HTML", disable_web_page_preview=True
-    )
+    await message.edit_text(text=text, parse_mode="HTML", disable_web_page_preview=True)
     if txs:
-        await schedule_tx_update(context, message.chat_id, message.message_id, user_id, txs, mint, user.wallet_public)
-    
+        await schedule_tx_update(
+            context, message.chat_id, message.message_id, user_id, txs, mint, user.wallet_public
+        )
+
     return SELL_TOKEN
+
 
 async def confirm_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     # Process the sell
     return await process_sell(update, context)
+
 
 async def cancel_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -409,7 +431,7 @@ token_sell_conv_handler = ConversationHandler(
         CONFIRM_SELL: [
             CallbackQueryHandler(confirm_sell, pattern="^" + str(CONFIRM_SELL) + "$"),
             CallbackQueryHandler(cancel_sell, pattern="^" + str(CANCEL_SELL) + "$"),
-        ]
+        ],
     },
     fallbacks=[CommandHandler(str(SELL_TOKEN), sell_token)],
 )

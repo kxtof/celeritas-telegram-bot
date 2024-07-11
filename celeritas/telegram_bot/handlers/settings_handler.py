@@ -1,25 +1,26 @@
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-    ConversationHandler,
-    MessageHandler,
-    filters,
-)
-from celeritas.db import UserDB
+
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram import Update
+from telegram.ext import CallbackQueryHandler
+from telegram.ext import CommandHandler
+from telegram.ext import ContextTypes
+from telegram.ext import ConversationHandler
+from telegram.ext import filters
+from telegram.ext import MessageHandler
+
+from celeritas.db import user_db
 from celeritas.telegram_bot.callbacks import *
 from celeritas.telegram_bot.handlers.auto_buy_handler import autobuy_conv_handler
 from celeritas.telegram_bot.handlers.auto_sell_handler import autosell_conv_handler
 from celeritas.telegram_bot.handlers.buy_settings_handler import buy_settings_handler
 from celeritas.telegram_bot.handlers.sell_settings_handler import sell_settings_handler
-from celeritas.telegram_bot.utils import delete_messages, edit_message, utc_time_now
+from celeritas.telegram_bot.utils import delete_messages
+from celeritas.telegram_bot.utils import edit_message
+from celeritas.telegram_bot.utils import utc_time_now
 
 logger = logging.getLogger(__name__)
-
-# Database
-db = UserDB()
 
 FAST_FEE, LIGHTNING_FEE = 0.001, 0.008
 
@@ -70,6 +71,7 @@ async def generate_settings_keyboard(user_settings) -> InlineKeyboardMarkup:
     reply_markup = InlineKeyboardMarkup(keyboard)
     return reply_markup
 
+
 def settings_text():
     return (
         "🛠️ <b>Settings Panel</b> 🛠️\n\n"
@@ -86,29 +88,28 @@ def settings_text():
         f"🕒 <i>{utc_time_now()}</i>\n\n"
     )
 
+
 async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE, new=False) -> int:
     user_id = update.effective_user.id
-    current_user_settings = db.get_user_settings(user_id)
+    current_user_settings = user_db.get_user_settings(user_id)
     query = update.callback_query
     await query.answer()
     reply_markup = await generate_settings_keyboard(current_user_settings)
 
     if new:
         message = await query.message.reply_text(
-            text=settings_text(), reply_markup=reply_markup, parse_mode='HTML'
+            text=settings_text(), reply_markup=reply_markup, parse_mode="HTML"
         )
     else:
         message = await query.edit_message_text(
-            text=settings_text(), reply_markup=reply_markup, parse_mode='HTML'
+            text=settings_text(), reply_markup=reply_markup, parse_mode="HTML"
         )
     context.user_data["settings_message_id"] = message.message_id
 
     return SETTINGS
 
 
-async def close_settings_menu(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def close_settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     # Delete the settings message
@@ -125,12 +126,10 @@ async def set_fee_fast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
-    current_user_settings = db.update_user_settings(user_id, "priority_fee", FAST_FEE)
+    current_user_settings = user_db.update_user_settings(user_id, "priority_fee", FAST_FEE)
     # Edit keyboard to reflect changed settings
     reply_markup = await generate_settings_keyboard(current_user_settings)
-    await query.edit_message_text(
-        text=settings_text(), reply_markup=reply_markup, parse_mode='HTML'
-    )
+    await query.edit_message_text(text=settings_text(), reply_markup=reply_markup, parse_mode="HTML")
     return SETTINGS
 
 
@@ -138,23 +137,17 @@ async def set_fee_lightning(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
-    current_user_settings = db.update_user_settings(
-        user_id, "priority_fee", LIGHTNING_FEE
-    )
+    current_user_settings = user_db.update_user_settings(user_id, "priority_fee", LIGHTNING_FEE)
     # Edit keyboard to reflect changed settings
     reply_markup = await generate_settings_keyboard(current_user_settings)
-    await query.edit_message_text(
-        text=settings_text(), reply_markup=reply_markup, parse_mode='HTML'
-    )
+    await query.edit_message_text(text=settings_text(), reply_markup=reply_markup, parse_mode="HTML")
     return SETTINGS
 
 
 async def set_fee_custom(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    message = await query.message.reply_text(
-        text="Please enter your custom fee in SOL:"
-    )
+    message = await query.message.reply_text(text="Please enter your custom fee in SOL:")
     context.user_data["custom_fee_message_id"] = message.message_id
     return CUSTOM_FEE
 
@@ -165,9 +158,7 @@ async def custom_fee_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     try:
         fee_size = float(update.message.text)
         fee_size = max(0.0004, fee_size)
-        current_user_settings = db.update_user_settings(
-            user_id, "priority_fee", fee_size
-        )
+        current_user_settings = user_db.update_user_settings(user_id, "priority_fee", fee_size)
         reply_markup = await generate_settings_keyboard(current_user_settings)
         # Delete the message where the user entered their custom fee
         # and the user's response message
@@ -187,10 +178,9 @@ async def custom_fee_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
         return SETTINGS
     except ValueError:
-        await update.message.reply_text(
-            "Invalid input. Please enter a valid number for the custom fee."
-        )
+        await update.message.reply_text("Invalid input. Please enter a valid number for the custom fee.")
         return CUSTOM_FEE
+
 
 async def set_min_pos_value(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -199,20 +189,21 @@ async def set_min_pos_value(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     context.user_data["min_pos_value_message_id"] = message.message_id
     return MIN_POS_VALUE_INPUT
 
+
 async def min_pos_value_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     try:
         min_pos_value = max(0, float(update.message.text))
-        current_user_settings = db.update_user_settings(user_id, "min_pos_value", min_pos_value)
-        
+        current_user_settings = user_db.update_user_settings(user_id, "min_pos_value", min_pos_value)
+
         await delete_messages(
             context,
             chat_id,
             context.user_data.get("min_pos_value_message_id"),
             update.message.message_id,
         )
-        
+
         await edit_message(
             context,
             chat_id,
@@ -220,25 +211,24 @@ async def min_pos_value_input(update: Update, context: ContextTypes.DEFAULT_TYPE
             settings_text(),
             await generate_settings_keyboard(current_user_settings),
         )
-        
+
         return SETTINGS
     except ValueError:
         await update.message.reply_text("Invalid input. Please enter a valid number.")
         return MIN_POS_VALUE_INPUT
+
 
 async def confirm_trades(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
     # Update user settings
-    current_user_settings = db.update_user_settings(
-        user_id, "confirm_trades", not db.get_user_settings(user_id).confirm_trades
+    current_user_settings = user_db.update_user_settings(
+        user_id, "confirm_trades", not user_db.get_user_settings(user_id).confirm_trades
     )
     # Edit keyboard to reflect changed settings
     reply_markup = await generate_settings_keyboard(current_user_settings)
-    await query.edit_message_text(
-        text=settings_text(), reply_markup=reply_markup, parse_mode='HTML'
-    )
+    await query.edit_message_text(text=settings_text(), reply_markup=reply_markup, parse_mode="HTML")
     return SETTINGS
 
 
@@ -247,36 +237,32 @@ async def mev_protection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     query = update.callback_query
     await query.answer()
     # Update user settings
-    current_user_settings = db.update_user_settings(
-        user_id, "mev_protection", not db.get_user_settings(user_id).mev_protection
+    current_user_settings = user_db.update_user_settings(
+        user_id, "mev_protection", not user_db.get_user_settings(user_id).mev_protection
     )
     # Edit keyboard to reflect changed settings
     reply_markup = await generate_settings_keyboard(current_user_settings)
-    await query.edit_message_text(
-        text=settings_text(), reply_markup=reply_markup, parse_mode='HTML'
-    )
+    await query.edit_message_text(text=settings_text(), reply_markup=reply_markup, parse_mode="HTML")
     return SETTINGS
+
 
 async def chart_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
     # Update user settings
-    current_user_settings = db.update_user_settings(
-        user_id, "chart_previews", not db.get_user_settings(user_id).chart_previews
+    current_user_settings = user_db.update_user_settings(
+        user_id, "chart_previews", not user_db.get_user_settings(user_id).chart_previews
     )
     # Edit keyboard to reflect changed settings
     reply_markup = await generate_settings_keyboard(current_user_settings)
-    await query.edit_message_text(
-        text=settings_text(), reply_markup=reply_markup, parse_mode='HTML'
-    )
+    await query.edit_message_text(text=settings_text(), reply_markup=reply_markup, parse_mode="HTML")
     return SETTINGS
+
 
 # Conversation handler for settings
 settings_conv_handler = ConversationHandler(
-    entry_points=[
-        CallbackQueryHandler(settings_new, pattern="^" + str(SETTINGS_NEW) + "$")
-    ],
+    entry_points=[CallbackQueryHandler(settings_new, pattern="^" + str(SETTINGS_NEW) + "$")],
     states={
         SETTINGS: [
             CallbackQueryHandler(settings, pattern="^" + str(SETTINGS) + "$"),
@@ -284,21 +270,11 @@ settings_conv_handler = ConversationHandler(
             CallbackQueryHandler(set_fee_fast, pattern="^" + str(FEE_FAST) + "$"),
             CallbackQueryHandler(set_fee_custom, pattern="^" + str(FEE_CUSTOM) + "$"),
             CallbackQueryHandler(set_min_pos_value, pattern="^" + str(MIN_POS_VALUE) + "$"),
-            CallbackQueryHandler(
-                mev_protection, pattern="^" + str(MEV_PROTECTION) + "$"
-            ),
-            CallbackQueryHandler(
-                set_fee_lightning, pattern="^" + str(FEE_LIGHTNING) + "$"
-            ),
-            CallbackQueryHandler(
-                confirm_trades, pattern="^" + str(CONFIRM_TRADES) + "$"
-            ),
-            CallbackQueryHandler(
-                chart_previews, pattern="^" + str(CHART_PREVIEWS) + "$"
-            ),
-            CallbackQueryHandler(
-                close_settings_menu, pattern="^" + str(CLOSE_SETTINGS_MENU) + "$"
-            ),
+            CallbackQueryHandler(mev_protection, pattern="^" + str(MEV_PROTECTION) + "$"),
+            CallbackQueryHandler(set_fee_lightning, pattern="^" + str(FEE_LIGHTNING) + "$"),
+            CallbackQueryHandler(confirm_trades, pattern="^" + str(CONFIRM_TRADES) + "$"),
+            CallbackQueryHandler(chart_previews, pattern="^" + str(CHART_PREVIEWS) + "$"),
+            CallbackQueryHandler(close_settings_menu, pattern="^" + str(CLOSE_SETTINGS_MENU) + "$"),
             autobuy_conv_handler,
             autosell_conv_handler,
             buy_settings_handler,
@@ -309,4 +285,3 @@ settings_conv_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler(str(SETTINGS), settings)],
 )
-

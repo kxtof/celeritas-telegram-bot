@@ -1,51 +1,45 @@
-import httpx
 import base64
-import os
-from celeritas.telegram_bot.utils import get_blockhash
-from celeritas.config import config
-from celeritas.db import TokenDB
-from celeritas.constants import (
-    client,
-    aclient,
-    WRAPPED_SOL,
-    SOLANA_MINT,
-    LAMPORTS_PER_SOL,
-)
-from celeritas.transact_utils import (
-    make_swap_instruction,
-    get_pool_id_by_mint,
-    get_transaction_keys,
-    get_token_account,
-    TOKEN_PROGRAM_ID,
-    get_quote_info_from_pool,
-    make_pump_fun_buy_instruction,
-    make_pump_fun_sell_instruction,
-    make_pump_fun_snipe_instruction,
-    is_jupiter_token,
-)
-from jupiter_python_sdk.jupiter import Jupiter
-from solders.keypair import Keypair
-from solders.pubkey import Pubkey
-from solders.system_program import transfer, TransferParams
-from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
-from solders.transaction import VersionedTransaction
-from solders.instruction import Instruction, AccountMeta
-from solders.message import MessageV0
-from solana.rpc.types import TokenAccountOpts, TxOpts
-from solana.rpc.commitment import Commitment
-from spl.token.core import _TokenCore
-from spl.token.instructions import (
-    create_associated_token_account,
-    get_associated_token_address,
-    close_account,
-    CloseAccountParams,
-    close_account, 
-    CloseAccountParams
-)
 from typing import List
- 
 
-tokendb = TokenDB()
+import httpx
+from jupiter_python_sdk.jupiter import Jupiter
+from solana.rpc.commitment import Commitment
+from solana.rpc.types import TokenAccountOpts
+from solana.rpc.types import TxOpts
+from solders.compute_budget import set_compute_unit_limit
+from solders.compute_budget import set_compute_unit_price
+from solders.instruction import AccountMeta
+from solders.instruction import Instruction
+from solders.keypair import Keypair
+from solders.message import MessageV0
+from solders.pubkey import Pubkey
+from solders.system_program import transfer
+from solders.system_program import TransferParams
+from solders.transaction import VersionedTransaction
+from spl.token.core import _TokenCore
+from spl.token.instructions import close_account
+from spl.token.instructions import CloseAccountParams
+from spl.token.instructions import create_associated_token_account
+from spl.token.instructions import get_associated_token_address
+
+from celeritas.config import config
+from celeritas.constants import aclient
+from celeritas.constants import client
+from celeritas.constants import LAMPORTS_PER_SOL
+from celeritas.constants import SOLANA_MINT
+from celeritas.constants import WRAPPED_SOL
+from celeritas.db import token_db
+from celeritas.telegram_bot.utils import get_blockhash
+from celeritas.transact_utils import get_pool_id_by_mint
+from celeritas.transact_utils import get_quote_info_from_pool
+from celeritas.transact_utils import get_token_account
+from celeritas.transact_utils import get_transaction_keys
+from celeritas.transact_utils import is_jupiter_token
+from celeritas.transact_utils import make_pump_fun_buy_instruction
+from celeritas.transact_utils import make_pump_fun_sell_instruction
+from celeritas.transact_utils import make_pump_fun_snipe_instruction
+from celeritas.transact_utils import make_swap_instruction
+from celeritas.transact_utils import TOKEN_PROGRAM_ID
 
 
 class Transact:
@@ -73,9 +67,9 @@ class Transact:
     def __init__(
         self,
         wallet_secret: str,
-        platform_fee_pubkey: str=None,
-        platform_fee_bps: int=50,
-        fee_sol: float=0.00007,
+        platform_fee_pubkey: str = None,
+        platform_fee_bps: int = 50,
+        fee_sol: float = 0.00007,
     ):
         self.compute_unit_limit = 200_000
         self.compute_unit_price = int(
@@ -94,9 +88,7 @@ class Transact:
         except:
             raise Exception("Missing platform fee pubkey!")
 
-    async def _get_jupiter_quote(
-        self, input_mint, output_mint, amount, slippage_bps=50, max_accounts=None
-    ):
+    async def _get_jupiter_quote(self, input_mint, output_mint, amount, slippage_bps=50, max_accounts=None):
         try:
             return await self.jupiter.quote(
                 input_mint=input_mint,
@@ -109,13 +101,11 @@ class Transact:
             # raise Exception("Failed retrieving Jupiter quote.")
             return None
 
-    async def _create_transaction(
-        self, quote, fee=None
-    ):
+    async def _create_transaction(self, quote, fee=None):
         ixs = [
             set_compute_unit_price(self.compute_unit_price),
             set_compute_unit_limit(self.compute_unit_limit),
-        ] + list(quote['instructions'])
+        ] + list(quote["instructions"])
         # Add platform transaction fee
         if self.platform_fee_pubkey and fee:
             ixs.append(
@@ -123,7 +113,7 @@ class Transact:
                     TransferParams(
                         from_pubkey=self.keypair.pubkey(),
                         to_pubkey=self.platform_fee_pubkey,
-                        lamports=int(fee*LAMPORTS_PER_SOL)
+                        lamports=int(fee * LAMPORTS_PER_SOL),
                     )
                 )
             )
@@ -134,16 +124,12 @@ class Transact:
             [],
             recent_blockhash,
         )
-        return VersionedTransaction(compiled_message, quote['keypairs'])
+        return VersionedTransaction(compiled_message, quote["keypairs"])
 
     async def _get_token_account(self, mint: Pubkey):
         try:
             return (
-                (
-                    await aclient.get_token_accounts_by_owner(
-                        self.keypair.pubkey(), TokenAccountOpts(mint)
-                    )
-                )
+                (await aclient.get_token_accounts_by_owner(self.keypair.pubkey(), TokenAccountOpts(mint)))
                 .value[0]
                 .pubkey
             )
@@ -173,9 +159,7 @@ class Transact:
         ).json()
         instructions = []
         for ix in (
-            ix_data["setupInstructions"]
-            + [ix_data["swapInstruction"]]
-            + [ix_data["cleanupInstruction"]]
+            ix_data["setupInstructions"] + [ix_data["swapInstruction"]] + [ix_data["cleanupInstruction"]]
         ):
             meta_accounts = [
                 AccountMeta(
@@ -205,7 +189,7 @@ class Transact:
             current_price = (int(quote["outAmount"]) / LAMPORTS_PER_SOL) / (
                 int(quote["inAmount"]) / (10**mint_decimals)
             )
-            token_amount_out = int(quote['outAmount']) / LAMPORTS_PER_SOL
+            token_amount_out = int(quote["outAmount"]) / LAMPORTS_PER_SOL
             min_token_amount_out = int(quote["otherAmountThreshold"]) / LAMPORTS_PER_SOL
         return {
             "quote": {
@@ -225,14 +209,12 @@ class Transact:
         amount: amount of input SPL token, can be float
         slippage_bps: each basis point is a hundreth of a %, i.e. 50 is 0.5% slippage
         """
-        out_token = await tokendb.add_token(output_mint.__str__())
+        out_token = await token_db.add_token(output_mint.__str__())
         out_decimals = out_token["decimals"]
-        in_token = await tokendb.add_token(input_mint.__str__())
+        in_token = await token_db.add_token(input_mint.__str__())
         in_decimals = in_token["decimals"]
         amount = int(amount * (10**in_decimals))
-        quote = await self._get_jupiter_quote(
-            input_mint, output_mint, amount, slippage_bps, max_accounts=30
-        )
+        quote = await self._get_jupiter_quote(input_mint, output_mint, amount, slippage_bps, max_accounts=30)
         instructions = await self._create_jupiter_instructions(quote)
         current_price = (int(quote["outAmount"]) / (10**out_decimals)) / (
             int(quote["inAmount"]) / (10**in_decimals)
@@ -247,9 +229,7 @@ class Transact:
             "keypairs": [self.keypair],
         }
 
-    async def _get_raydium_parameters(
-        self, input_mint, output_mint, amount, slippage_bps
-    ):
+    async def _get_raydium_parameters(self, input_mint, output_mint, amount, slippage_bps):
         amm = await get_pool_id_by_mint(input_mint, output_mint)
         if not amm:
             return None
@@ -257,15 +237,10 @@ class Transact:
         else:
             transaction_keys = await get_transaction_keys(amm)
         quote = await get_quote_info_from_pool(input_mint, amount, amm)
-        quote["min_token_amount_out"] = quote["token_amount_out"] / (
-            1 + (slippage_bps / 10000)
-        )
-        amount = int(
-            amount * (10 ** await tokendb.get_token_decimals(input_mint.__str__()))
-        )
+        quote["min_token_amount_out"] = quote["token_amount_out"] / (1 + (slippage_bps / 10000))
+        amount = int(amount * (10 ** await token_db.get_token_decimals(input_mint.__str__())))
         min_amount_out = int(
-            quote["min_token_amount_out"]
-            * (10 ** await tokendb.get_token_decimals(output_mint.__str__()))
+            quote["min_token_amount_out"] * (10 ** await token_db.get_token_decimals(output_mint.__str__()))
         )
         swap_token_account, swap_token_account_ix = await get_token_account(
             self.keypair.pubkey(), output_mint
@@ -288,9 +263,7 @@ class Transact:
             swap_token_account,
             swap_token_account_ix,
             transaction_keys,
-        ) = await self._get_raydium_parameters(
-            WRAPPED_SOL, output_mint, amount, slippage_bps
-        )
+        ) = await self._get_raydium_parameters(WRAPPED_SOL, output_mint, amount, slippage_bps)
         wsol_token_account, swap_tx, payer, wsol_account_keypair, opts = (
             _TokenCore._create_wrapped_native_account_args(
                 TOKEN_PROGRAM_ID,
@@ -331,9 +304,7 @@ class Transact:
             swap_token_account,
             swap_token_account_ix,
             transaction_keys,
-        ) = await self._get_raydium_parameters(
-            input_mint, WRAPPED_SOL, amount, slippage_bps
-        )
+        ) = await self._get_raydium_parameters(input_mint, WRAPPED_SOL, amount, slippage_bps)
         input_token_account = await self._get_token_account(input_mint)
         swap_ix = make_swap_instruction(
             amount,
@@ -374,14 +345,14 @@ class Transact:
         ixs.append(ix)
         return {"quote": quote, "instructions": ixs, "keypairs": [self.keypair]}
 
-    async def snipe_pump_fun(self, output_mint, output_amount, max_sol_cost, bonding_curve, associated_bonding_curve):
-        """ Create a pump.fun buy instruction without fetching anything through RPC """
+    async def snipe_pump_fun(
+        self, output_mint, output_amount, max_sol_cost, bonding_curve, associated_bonding_curve
+    ):
+        """Create a pump.fun buy instruction without fetching anything through RPC"""
         output_mint = Pubkey.from_string(output_mint)
         swap_token_account = get_associated_token_address(self.keypair.pubkey(), output_mint)
         swap_token_account_ix = create_associated_token_account(
-            self.keypair.pubkey(),
-            self.keypair.pubkey(),
-            output_mint
+            self.keypair.pubkey(), self.keypair.pubkey(), output_mint
         )
         ixs = []
         ixs.append(swap_token_account_ix)
@@ -399,9 +370,7 @@ class Transact:
 
     async def sell_pump_fun(self, input_mint, amount, slippage_bps, token):
         input_mint = Pubkey.from_string(input_mint)
-        swap_token_account, _ = await get_token_account(
-            self.keypair.pubkey(), input_mint
-        )
+        swap_token_account, _ = await get_token_account(self.keypair.pubkey(), input_mint)
         ixs = []
         ix, quote = await make_pump_fun_sell_instruction(
             amount,
@@ -416,8 +385,8 @@ class Transact:
         return {"quote": quote, "instructions": ixs, "keypairs": [self.keypair]}
 
     async def buy(self, mint, amount, slippage_bps=50):
-        token = await tokendb.add_token(mint)
-        
+        token = await token_db.add_token(mint)
+
         # Check if it's a pump.fun token
         if token["is_pump_fun"]:
             if not token["pump_fun_data"]["bonding_curve_complete"]:
@@ -433,21 +402,19 @@ class Transact:
                 max_accounts=30,
             )
             if quote:
-                return await self._prepare_jupiter_trade(
-                    quote, mint_decimals, buy=True
-                )
+                return await self._prepare_jupiter_trade(quote, mint_decimals, buy=True)
         # If not Jupiter-supported or Jupiter quote failed, go through Raydium
         return await self.buy_raydium_amm(mint, amount, slippage_bps=slippage_bps)
 
     async def sell(self, mint, amount, slippage_bps=50):
-        token = await tokendb.add_token(mint)
-        
+        token = await token_db.add_token(mint)
+
         # Check if it's a pump.fun token
         if token["is_pump_fun"]:
             if not token["pump_fun_data"]["bonding_curve_complete"]:
                 return await self.sell_pump_fun(mint, amount, slippage_bps, token)
         # Try to get a Jupiter quote
-        if await is_jupiter_token(mint):  
+        if await is_jupiter_token(mint):
             mint_decimals = token["decimals"]
             quote = await self._get_jupiter_quote(
                 mint,
@@ -457,10 +424,8 @@ class Transact:
                 max_accounts=30,
             )
             if quote:
-                return await self._prepare_jupiter_trade(
-                    quote, mint_decimals, buy=False
-                )
-        # If not Jupiter-supported or Jupiter quote failed, go through Raydium    
+                return await self._prepare_jupiter_trade(quote, mint_decimals, buy=False)
+        # If not Jupiter-supported or Jupiter quote failed, go through Raydium
         return await self.sell_raydium_amm(mint, amount, slippage_bps=slippage_bps)
 
     async def sell_percentage(self, mint, percentage, slippage_bps=50):
@@ -474,11 +439,7 @@ class Transact:
         percentage = min(100, percentage)
         q = client.get_token_accounts_by_owner_json_parsed(
             self.keypair.pubkey(),
-            TokenAccountOpts(
-                program_id=Pubkey.from_string(
-                    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-                )
-            ),
+            TokenAccountOpts(program_id=Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
         )
         holdings = {}
         for a in q.value:
@@ -486,22 +447,20 @@ class Transact:
                 continue
             quote = await self.sell(
                 mint,
-                (percentage / 100)
-                * a.account.data.parsed["info"]["tokenAmount"]["uiAmount"],
+                (percentage / 100) * a.account.data.parsed["info"]["tokenAmount"]["uiAmount"],
                 slippage_bps=slippage_bps,
             )
             if percentage == 100:
                 quote["instructions"].append(self._close_account_ix(a.pubkey))
             return quote
         return None
-    
+
     async def construct_and_send(self, quote, fee):
         try:
-            tx = await self._create_transaction(
-                quote,
-                fee=fee # add transaction fee in sol
+            tx = await self._create_transaction(quote, fee=fee)  # add transaction fee in sol
+            txs = await aclient.send_transaction(
+                tx, opts=TxOpts(skip_preflight=True, preflight_commitment="confirmed")
             )
-            txs = await aclient.send_transaction(tx, opts=TxOpts(skip_preflight=True, preflight_commitment="confirmed"))
             return txs.value
         except Exception as e:
             print(e)

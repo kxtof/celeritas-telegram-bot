@@ -1,6 +1,7 @@
 from solana.rpc.api import Client
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
+
 from celeritas.config import config
 
 RPC_URL = config.solana_rpc_url

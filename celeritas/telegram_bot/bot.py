@@ -1,7 +1,9 @@
 import logging
-# Remove per_message, ... warnings
 from warnings import filterwarnings
+
 from telegram.warnings import PTBUserWarning
+# Remove per_message, ... warnings
+
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -12,7 +14,7 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler,
 )
-from celeritas.db import UserDB
+from celeritas.db import user_db
 from celeritas.user import User
 from celeritas.config import config
 from celeritas.telegram_bot.callbacks import *
@@ -20,28 +22,27 @@ from celeritas.telegram_bot.utils import utc_time_now, sol_dollar_value
 from celeritas.telegram_bot.utils import nice_float_price_format as nfpf
 from celeritas.telegram_bot.handlers.buy_handler import token_buy_conv_handler
 from celeritas.telegram_bot.handlers.settings_handler import settings_conv_handler
-from celeritas.telegram_bot.handlers.sell_menu_handler import sell_menu_conv_handler, withdraw_menu_conv_handler
+from celeritas.telegram_bot.handlers.sell_menu_handler import (
+    sell_menu_conv_handler,
+    withdraw_menu_conv_handler,
+)
 from celeritas.telegram_bot.handlers.withdraw_handler import withdraw_conv_handler
 from celeritas.telegram_bot.handlers.sniper_menu_handler import sniper_menu_conv_handler
 from celeritas.telegram_bot.user_sequential_update_processor import UserSequentialUpdateProcessor
 
 # Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 # set higher logging level for httpx to avoid all GET and POST requests being logged
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# Database
-db = UserDB()
-
 
 async def generate_start_message(user, new=False):
     message_text = (
-        f"<i>Welcome {user.full_name} to the Celeritas bot!\n"
-        "Your new trading partner.</i>\n\n"
-    ) if new else ""
+        (f"<i>Welcome {user.full_name} to the Celeritas bot!\n" "Your new trading partner.</i>\n\n")
+        if new
+        else ""
+    )
     balance = user.sol_in_wallet
     balance_str = (
         f"0 SOL ($0.00)"
@@ -64,12 +65,12 @@ async def generate_start_message(user, new=False):
             InlineKeyboardButton("Sell", callback_data=str(NEW_SELL_MENU)),
         ],
         [
-            #InlineKeyboardButton("Limit Orders", callback_data=str(LIMIT_ORDERS)),
-            #InlineKeyboardButton("DCA Orders", callback_data=str(DCA_ORDERS)),
+            # InlineKeyboardButton("Limit Orders", callback_data=str(LIMIT_ORDERS)),
+            # InlineKeyboardButton("DCA Orders", callback_data=str(DCA_ORDERS)),
             InlineKeyboardButton("Pump.fun Sniper", callback_data=str(NEW_SNIPER_MENU)),
         ],
         [
-            #InlineKeyboardButton("Copy Trade", callback_data=str(COPY_TRADE)),
+            # InlineKeyboardButton("Copy Trade", callback_data=str(COPY_TRADE)),
         ],
         [
             InlineKeyboardButton("Referrals", callback_data=str(REFERRALS)),
@@ -94,22 +95,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     full_name = update.effective_user.full_name
     new = False
     # Add a new user
-    if not db.user_exists(user_id):
+    if not user_db.user_exists(user_id):
         user = User(id=user_id, name=name, full_name=full_name)
         if context.args and len(context.args) > 0:
             try:
                 referrer_id = int(context.args[0])
-                if db.user_exists(referrer_id):
+                if user_db.user_exists(referrer_id):
                     user.referrer = referrer_id
-                    n = db.get_attribute(referrer_id, "users_referred")+1
-                    db.update_attribute(referrer_id, "users_referred", n)
+                    n = user_db.get_attribute(referrer_id, "users_referred") + 1
+                    user_db.update_attribute(referrer_id, "users_referred", n)
             except ValueError:
                 pass
-        db.add_user(user)
+        user_db.add_user(user)
         new = True
     else:
-        user = db.get_user(user_id)
-    
+        user = user_db.get_user(user_id)
+
     message_text, reply_markup = await generate_start_message(user, new)
 
     await update.message.reply_text(
@@ -127,8 +128,8 @@ async def refresh(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     user_id = update.effective_user.id
-    db.update_sol_balance(user_id)
-    user = db.get_user(user_id)
+    user_db.update_sol_balance(user_id)
+    user = user_db.get_user(user_id)
     message_text, reply_markup = await generate_start_message(user)
 
     await query.edit_message_text(
@@ -138,6 +139,7 @@ async def refresh(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         disable_web_page_preview=True,
     )
     return MAIN_MENU
+
 
 async def prompt_for_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -204,11 +206,12 @@ async def help_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     )
     return MAIN_MENU
 
+
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     user_id = update.effective_user.id
-    user = db.get_user(user_id)
+    user = user_db.get_user(user_id)
     referral_link = f"t.me/{context.bot.username}?start={user_id}"
 
     text = (
@@ -234,17 +237,15 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "ℹ️ <b><u>Fees are paid out daily to users with at least 0.005 SOL in accrued unpaid fees.</u></b>\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
-    reply_markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("❌ Close", callback_data=str(CLOSE_MESSAGE))]
-    ])
+    reply_markup = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("❌ Close", callback_data=str(CLOSE_MESSAGE))]]
+    )
 
     await query.message.reply_text(
-        text=text,
-        reply_markup=reply_markup,
-        parse_mode="HTML",
-        disable_web_page_preview=True
+        text=text, reply_markup=reply_markup, parse_mode="HTML", disable_web_page_preview=True
     )
     return MAIN_MENU
+
 
 async def close_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -255,12 +256,9 @@ async def close_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 def main() -> None:
     """Run the bot."""
     application = (
-        Application
-        .builder()
+        Application.builder()
         .token(config.telegram_bot_token)
-        .concurrent_updates(
-            UserSequentialUpdateProcessor(10)
-        )
+        .concurrent_updates(UserSequentialUpdateProcessor(10))
         .build()
     )
 
@@ -280,7 +278,6 @@ def main() -> None:
                 withdraw_conv_handler,
                 sniper_menu_conv_handler,
                 token_buy_conv_handler,
-
             ],
         },
         fallbacks=[CommandHandler("start", start)],

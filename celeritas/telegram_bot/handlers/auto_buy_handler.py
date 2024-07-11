@@ -1,15 +1,18 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-    ConversationHandler,
-    MessageHandler,
-    filters,
-)
-from celeritas.db import UserDB
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram import Update
+from telegram.ext import CallbackQueryHandler
+from telegram.ext import CommandHandler
+from telegram.ext import ContextTypes
+from telegram.ext import ConversationHandler
+from telegram.ext import filters
+from telegram.ext import MessageHandler
+
+from celeritas.db import user_db
 from celeritas.telegram_bot.callbacks import *
-from celeritas.telegram_bot.utils import delete_messages, edit_message, utc_time_now
+from celeritas.telegram_bot.utils import delete_messages
+from celeritas.telegram_bot.utils import edit_message
+from celeritas.telegram_bot.utils import utc_time_now
 
 """
 auto_buy, AUTO_BUY - function and handler to enter auto_buy settings
@@ -23,9 +26,6 @@ auto_buy_slippage, AUTO_BUY_SLIPPAGE - f. to change, slippage
 auto_buy_slippage_input
 AUTO_BUY_SLIPPAGE_INPUT
 """
-
-# Database
-db = UserDB()
 
 
 def generate_auto_buy_keyboard(user_settings):
@@ -51,6 +51,7 @@ def generate_auto_buy_keyboard(user_settings):
         ]
     )
 
+
 def auto_buy_text():
     return (
         "🤖 <b>Auto Buy Settings</b> 🤖\n\n"
@@ -64,9 +65,10 @@ def auto_buy_text():
         f"🕒 <i>{utc_time_now()}</i>"
     )
 
+
 async def auto_buy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
-    user_settings = db.get_user_settings(user_id)
+    user_settings = user_db.get_user_settings(user_id)
     query = update.callback_query
     await query.answer()
     reply_markup = generate_auto_buy_keyboard(user_settings)
@@ -83,36 +85,30 @@ async def auto_buy_change(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
-    # Get current settings, update value, write to db
-    user_settings = db.update_user_settings(
-        user_id, "autobuy", not db.get_user_settings(user_id).autobuy
+    # Get current settings, update value, write to user_db
+    user_settings = user_db.update_user_settings(
+        user_id, "autobuy", not user_db.get_user_settings(user_id).autobuy
     )
     # Edit keyboard to reflect changed settings
     reply_markup = generate_auto_buy_keyboard(user_settings)
-    await query.edit_message_text(
-        text=auto_buy_text(), reply_markup=reply_markup, parse_mode="HTML"
-    )
+    await query.edit_message_text(text=auto_buy_text(), reply_markup=reply_markup, parse_mode="HTML")
     return AUTO_BUY
 
 
 async def auto_buy_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    message = await query.message.reply_text(
-        text="Please enter your Auto Buy amount in SOL:"
-    )
+    message = await query.message.reply_text(text="Please enter your Auto Buy amount in SOL:")
     context.user_data["auto_buy_message_id"] = message.message_id
     return AUTO_BUY_AMOUNT_INPUT
 
 
-async def auto_buy_amount_input(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def auto_buy_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     try:
         buy_amount = max(0.002, float(update.message.text))
-        user_settings = db.update_user_settings(user_id, "autobuy_amount", buy_amount)
+        user_settings = user_db.update_user_settings(user_id, "autobuy_amount", buy_amount)
         reply_markup = generate_auto_buy_keyboard(user_settings)
         # Delete the message where the user entered their buy amount
         await delete_messages(
@@ -148,15 +144,13 @@ async def auto_buy_slippage(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     return AUTO_BUY_SLIPPAGE_INPUT
 
 
-async def auto_buy_slippage_input(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def auto_buy_slippage_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     try:
         slippage = float(update.message.text.replace("%", ""))
         slippage = int(max(1, slippage))
-        user_settings = db.update_user_settings(user_id, "autobuy_slippage", slippage)
+        user_settings = user_db.update_user_settings(user_id, "autobuy_slippage", slippage)
         reply_markup = generate_auto_buy_keyboard(user_settings)
         await delete_messages(
             context,
@@ -186,22 +180,12 @@ autobuy_conv_handler = ConversationHandler(
     states={
         AUTO_BUY: [
             CallbackQueryHandler(auto_buy, pattern="^" + str(AUTO_BUY) + "$"),
-            CallbackQueryHandler(
-                auto_buy_change, pattern="^" + str(AUTO_BUY_CHANGE) + "$"
-            ),
-            CallbackQueryHandler(
-                auto_buy_amount, pattern="^" + str(AUTO_BUY_AMOUNT) + "$"
-            ),
-            CallbackQueryHandler(
-                auto_buy_slippage, pattern="^" + str(AUTO_BUY_SLIPPAGE) + "$"
-            ),
+            CallbackQueryHandler(auto_buy_change, pattern="^" + str(AUTO_BUY_CHANGE) + "$"),
+            CallbackQueryHandler(auto_buy_amount, pattern="^" + str(AUTO_BUY_AMOUNT) + "$"),
+            CallbackQueryHandler(auto_buy_slippage, pattern="^" + str(AUTO_BUY_SLIPPAGE) + "$"),
         ],
-        AUTO_BUY_AMOUNT_INPUT: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, auto_buy_amount_input)
-        ],
-        AUTO_BUY_SLIPPAGE_INPUT: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, auto_buy_slippage_input)
-        ],
+        AUTO_BUY_AMOUNT_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, auto_buy_amount_input)],
+        AUTO_BUY_SLIPPAGE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, auto_buy_slippage_input)],
     },
     fallbacks=[CommandHandler(str(AUTO_BUY), auto_buy)],
 )

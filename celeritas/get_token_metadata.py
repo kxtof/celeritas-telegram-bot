@@ -1,10 +1,12 @@
 import struct
 from enum import IntEnum
+
+import base58
 from construct import Struct as cStruct  # type: ignore
 from solders.pubkey import Pubkey
-from celeritas.constants import aclient
 from spl.token._layouts import MINT_LAYOUT
-import base58
+
+from celeritas.constants import aclient
 
 MAX_NAME_LENGTH = 32
 MAX_SYMBOL_LENGTH = 10
@@ -21,9 +23,7 @@ class InstructionType(IntEnum):
 METADATA_PROGRAM_ID = Pubkey.from_string("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s")
 SYSTEM_PROGRAM_ID = Pubkey.from_string("11111111111111111111111111111111")
 SYSVAR_RENT_PUBKEY = Pubkey.from_string("SysvarRent111111111111111111111111111111111")
-ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = Pubkey.from_string(
-    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-)
+ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = Pubkey.from_string("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
 TOKEN_PROGRAM_ID = Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
 
 
@@ -37,13 +37,9 @@ def get_metadata_account(mint_key):
 def unpack_metadata_account(data):
     assert data[0] == 4
     i = 1
-    source_account = base58.b58encode(
-        bytes(struct.unpack("<" + "B" * 32, data[i : i + 32]))
-    )
+    source_account = base58.b58encode(bytes(struct.unpack("<" + "B" * 32, data[i : i + 32])))
     i += 32
-    mint_account = base58.b58encode(
-        bytes(struct.unpack("<" + "B" * 32, data[i : i + 32]))
-    )
+    mint_account = base58.b58encode(bytes(struct.unpack("<" + "B" * 32, data[i : i + 32])))
     i += 32
     name_len = struct.unpack("<I", data[i : i + 4])[0]
     i += 4
@@ -68,9 +64,7 @@ def unpack_metadata_account(data):
         creator_len = struct.unpack("<I", data[i : i + 4])[0]
         i += 4
         for _ in range(creator_len):
-            creator = base58.b58encode(
-                bytes(struct.unpack("<" + "B" * 32, data[i : i + 32]))
-            )
+            creator = base58.b58encode(bytes(struct.unpack("<" + "B" * 32, data[i : i + 32])))
             creators.append(creator)
             i += 32
             verified.append(data[i])
@@ -101,9 +95,7 @@ def unpack_metadata_account(data):
 async def get_metadata(mint_key):
     metadata_account = get_metadata_account(mint_key)
     data = (await aclient.get_account_info(metadata_account)).value.data
-    info = MINT_LAYOUT.parse(
-        (await aclient.get_account_info(Pubkey.from_string(mint_key))).value.data
-    )
+    info = MINT_LAYOUT.parse((await aclient.get_account_info(Pubkey.from_string(mint_key))).value.data)
     metadata = unpack_metadata_account(data)
     metadata["decimals"] = info.decimals
     metadata["supply"] = info.supply
@@ -111,7 +103,5 @@ async def get_metadata(mint_key):
 
 
 async def get_token_supply(mint_key):
-    info = MINT_LAYOUT.parse(
-        (await aclient.get_account_info(Pubkey.from_string(mint_key))).value.data
-    )
+    info = MINT_LAYOUT.parse((await aclient.get_account_info(Pubkey.from_string(mint_key))).value.data)
     return info.supply

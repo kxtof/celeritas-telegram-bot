@@ -1,5 +1,6 @@
 import datetime
 import time
+
 import requests
 from solana.rpc.api import Client
 from solders.hash import Hash
@@ -18,8 +19,8 @@ async def edit_message(context, chat_id, message_id, text, reply_markup):
             message_id=message_id,
             text=text,
             reply_markup=reply_markup,
-            parse_mode='HTML',
-            disable_web_page_preview=True
+            parse_mode="HTML",
+            disable_web_page_preview=True,
         )
 
 
@@ -29,24 +30,22 @@ def utc_time_now():
 
 def center_arrow(top_line, bottom_line, arrow="⇅", width=34):
     # Find the position of '|' in both lines
-    top_pipe_index = top_line.index('|')
-    bottom_pipe_index = bottom_line.index('|')
+    top_pipe_index = top_line.index("|")
+    bottom_pipe_index = bottom_line.index("|")
     # Calculate the maximum length before and after the '|'
     max_left = max(top_pipe_index, bottom_pipe_index)
     max_right = max(len(top_line) - top_pipe_index, len(bottom_line) - bottom_pipe_index)
     # Format both lines to align the '|'
     formatted_top = f"{top_line[:top_pipe_index].rjust(max_left)}{top_line[top_pipe_index:].ljust(max_right)}"
-    formatted_bottom = f"{bottom_line[:bottom_pipe_index].rjust(max_left)}{bottom_line[bottom_pipe_index:].ljust(max_right)}"
+    formatted_bottom = (
+        f"{bottom_line[:bottom_pipe_index].rjust(max_left)}{bottom_line[bottom_pipe_index:].ljust(max_right)}"
+    )
     # Calculate total width and center position
     total_width = max_left + max_right
-    center_position = max_left    
+    center_position = max_left
     # Center the arrow
     arrow_padding = " " * (center_position - len(arrow) // 2)
-    return (
-        f"{formatted_top}\n"
-        f"{arrow_padding}{arrow}\n"
-        f"{formatted_bottom}"
-    )
+    return f"{formatted_top}\n" f"{arrow_padding}{arrow}\n" f"{formatted_bottom}"
 
 
 def sol_dollar_value():
@@ -73,18 +72,18 @@ def nice_float_price_format(price: float, underline=False) -> str:
         return "0"
     elif price >= 1_000_000_000_000:
         price = f"{price / 1_000_000_000_000:.2f}"
-        return price.rstrip('0').rstrip('.')+'T'
+        return price.rstrip("0").rstrip(".") + "T"
     elif price >= 1_000_000_000:
         price = f"{price / 1_000_000_000:.2f}"
-        return price.rstrip('0').rstrip('.')+'B'
+        return price.rstrip("0").rstrip(".") + "B"
     elif price >= 1_000_000:
         price = f"{price / 1_000_000:.2f}"
-        return price.rstrip('0').rstrip('.')+'M'
+        return price.rstrip("0").rstrip(".") + "M"
     elif price >= 1_000:
         price = f"{price / 1_000:.2f}"
-        return price.rstrip('0').rstrip('.')+'K'
+        return price.rstrip("0").rstrip(".") + "K"
     elif before_d != "0":
-        return f"{price:.2f}".rstrip('0').rstrip('.')
+        return f"{price:.2f}".rstrip("0").rstrip(".")
     elif zeros_after_d > 2:
         return (
             f"0.0(<u>{zeros_after_d}</u>){after_d.lstrip('0')[:3].rstrip('0')}"
@@ -92,7 +91,7 @@ def nice_float_price_format(price: float, underline=False) -> str:
             else f"0.0({zeros_after_d}){after_d.lstrip('0')[:3].rstrip('0')}"
         )
     else:
-        return f"{price:.4f}".rstrip('0')
+        return f"{price:.4f}".rstrip("0")
 
 
 def get_blockhash():

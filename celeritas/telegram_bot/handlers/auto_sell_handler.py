@@ -1,15 +1,17 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-    ConversationHandler,
-    MessageHandler,
-    filters,
-)
-from celeritas.db import UserDB
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram import Update
+from telegram.ext import CallbackQueryHandler
+from telegram.ext import CommandHandler
+from telegram.ext import ContextTypes
+from telegram.ext import ConversationHandler
+from telegram.ext import filters
+from telegram.ext import MessageHandler
+
+from celeritas.db import user_db
 from celeritas.telegram_bot.callbacks import *
-from celeritas.telegram_bot.utils import delete_messages, edit_message
+from celeritas.telegram_bot.utils import delete_messages
+from celeritas.telegram_bot.utils import edit_message
 
 """
 auto_sell, AUTO_SELL - function and handler to enter auto_sell settings
@@ -26,9 +28,6 @@ auto_sell_add_order, AUTO_SELL_ADD_ORDER - f. to add order row
 auto_sell_slippage, AUTO_SELL_SLIPPAGE - f. to change, slippage
 auto_sell_slippage_input, AUTO_SELL_SLIPPAGE_INPUT
 """
-
-# Database
-db = UserDB()
 
 
 def generate_auto_sell_keyboard(user_settings):
@@ -74,14 +73,12 @@ def generate_auto_sell_keyboard(user_settings):
 
 async def auto_sell(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
-    user_settings = db.get_user_settings(user_id)
+    user_settings = user_db.get_user_settings(user_id)
     query = update.callback_query
     await query.answer()
     reply_markup = generate_auto_sell_keyboard(user_settings)
     # Edit the settings panel message and store the message ID
-    message = await query.edit_message_text(
-        text="Auto Sell Settings", reply_markup=reply_markup
-    )
+    message = await query.edit_message_text(text="Auto Sell Settings", reply_markup=reply_markup)
     context.user_data["auto_sell_settings_message_id"] = message.message_id
 
     return AUTO_SELL
@@ -91,9 +88,9 @@ async def auto_sell_change(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
-    # Get current settings, update value, write to db
-    user_settings = db.update_user_settings(
-        user_id, "autosell", not db.get_user_settings(user_id).autosell
+    # Get current settings, update value, write to user_db
+    user_settings = user_db.update_user_settings(
+        user_id, "autosell", not user_db.get_user_settings(user_id).autosell
     )
     # Edit keyboard to reflect changed settings
     reply_markup = generate_auto_sell_keyboard(user_settings)
@@ -101,16 +98,14 @@ async def auto_sell_change(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return AUTO_SELL
 
 
-async def auto_sell_add_order(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def auto_sell_add_order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     query = update.callback_query
     await query.answer()
-    # Get current settings, update value, write to db
-    user_settings = db.get_user_settings(user_id)
+    # Get current settings, update value, write to user_db
+    user_settings = user_db.get_user_settings(user_id)
     user_settings.autosell_targets.append([None, None])
-    db.update_user_settings(user_id, "autosell_targets", user_settings.autosell_targets)
+    user_db.update_user_settings(user_id, "autosell_targets", user_settings.autosell_targets)
     # Edit keyboard to reflect changed settings
     reply_markup = generate_auto_sell_keyboard(user_settings)
     await query.edit_message_text(text="Auto Sell Settings", reply_markup=reply_markup)
@@ -129,21 +124,15 @@ async def auto_sell_target(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return AUTO_SELL_TARGET_INPUT
 
 
-async def auto_sell_target_input(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def auto_sell_target_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     target_index = context.user_data["target_index"]
     try:
         target_price = float(update.message.text.replace("%", ""))
-        user_settings = db.get_user_settings(user_id)
-        user_settings.autosell_targets[target_index][0] = (
-            target_price if abs(target_price) > 0.01 else None
-        )
-        db.update_user_settings(
-            user_id, "autosell_targets", user_settings.autosell_targets
-        )
+        user_settings = user_db.get_user_settings(user_id)
+        user_settings.autosell_targets[target_index][0] = target_price if abs(target_price) > 0.01 else None
+        user_db.update_user_settings(user_id, "autosell_targets", user_settings.autosell_targets)
         reply_markup = generate_auto_sell_keyboard(user_settings)
         await delete_messages(
             context,
@@ -173,28 +162,22 @@ async def auto_sell_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await query.answer()
     target_index = int(query.data.split(":")[1])
     context.user_data["target_index"] = target_index
-    message = await query.message.reply_text(
-        text=f"Please enter the amount percentage for the target:"
-    )
+    message = await query.message.reply_text(text=f"Please enter the amount percentage for the target:")
     context.user_data["auto_sell_message_id"] = message.message_id
     return AUTO_SELL_AMOUNT_INPUT
 
 
-async def auto_sell_amount_input(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def auto_sell_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     target_index = context.user_data["target_index"]
     try:
         amount_percentage = float(update.message.text.replace("%", ""))
-        user_settings = db.get_user_settings(user_id)
+        user_settings = user_db.get_user_settings(user_id)
         user_settings.autosell_targets[target_index][1] = (
             amount_percentage if abs(amount_percentage) > 0.01 else None
         )
-        db.update_user_settings(
-            user_id, "autosell_targets", user_settings.autosell_targets
-        )
+        user_db.update_user_settings(user_id, "autosell_targets", user_settings.autosell_targets)
         reply_markup = generate_auto_sell_keyboard(user_settings)
         await delete_messages(
             context,
@@ -222,21 +205,17 @@ async def auto_sell_amount_input(
 async def auto_sell_slippage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    message = await query.message.reply_text(
-        text="Please enter your Auto Sell slippage in %:"
-    )
+    message = await query.message.reply_text(text="Please enter your Auto Sell slippage in %:")
     context.user_data["auto_sell_message_id"] = message.message_id
     return AUTO_SELL_SLIPPAGE_INPUT
 
 
-async def auto_sell_slippage_input(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def auto_sell_slippage_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     try:
         slippage = float(update.message.text.replace("%", ""))
-        user_settings = db.update_user_settings(user_id, "autosell_slippage", slippage)
+        user_settings = user_db.update_user_settings(user_id, "autosell_slippage", slippage)
         reply_markup = generate_auto_sell_keyboard(user_settings)
         await delete_messages(
             context,
@@ -266,31 +245,15 @@ autosell_conv_handler = ConversationHandler(
     states={
         AUTO_SELL: [
             CallbackQueryHandler(auto_sell, pattern="^" + str(AUTO_SELL) + "$"),
-            CallbackQueryHandler(
-                auto_sell_change, pattern="^" + str(AUTO_SELL_CHANGE) + "$"
-            ),
-            CallbackQueryHandler(
-                auto_sell_slippage, pattern="^" + str(AUTO_SELL_SLIPPAGE) + "$"
-            ),
-            CallbackQueryHandler(
-                auto_sell_target, pattern="^" + str(AUTO_SELL_TARGET) + r":\d+$"
-            ),
-            CallbackQueryHandler(
-                auto_sell_amount, pattern="^" + str(AUTO_SELL_AMOUNT) + r":\d+$"
-            ),
-            CallbackQueryHandler(
-                auto_sell_add_order, pattern="^" + str(AUTO_SELL_ADD_ORDER) + "$"
-            ),
+            CallbackQueryHandler(auto_sell_change, pattern="^" + str(AUTO_SELL_CHANGE) + "$"),
+            CallbackQueryHandler(auto_sell_slippage, pattern="^" + str(AUTO_SELL_SLIPPAGE) + "$"),
+            CallbackQueryHandler(auto_sell_target, pattern="^" + str(AUTO_SELL_TARGET) + r":\d+$"),
+            CallbackQueryHandler(auto_sell_amount, pattern="^" + str(AUTO_SELL_AMOUNT) + r":\d+$"),
+            CallbackQueryHandler(auto_sell_add_order, pattern="^" + str(AUTO_SELL_ADD_ORDER) + "$"),
         ],
-        AUTO_SELL_TARGET_INPUT: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, auto_sell_target_input)
-        ],
-        AUTO_SELL_AMOUNT_INPUT: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, auto_sell_amount_input)
-        ],
-        AUTO_SELL_SLIPPAGE_INPUT: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, auto_sell_slippage_input)
-        ],
+        AUTO_SELL_TARGET_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, auto_sell_target_input)],
+        AUTO_SELL_AMOUNT_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, auto_sell_amount_input)],
+        AUTO_SELL_SLIPPAGE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, auto_sell_slippage_input)],
     },
     fallbacks=[CommandHandler(str(AUTO_SELL), auto_sell)],
 )

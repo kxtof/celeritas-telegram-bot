@@ -18,7 +18,7 @@ class User_settings:
         autosell_slippage=40,
         mev_protection=False,
         chart_previews=False,
-        min_pos_value=0
+        min_pos_value=0,
     ):
         self.priority_fee = priority_fee
         self.buy_amounts = buy_amounts
@@ -52,7 +52,7 @@ class User_settings:
             "autosell_slippage": self.autosell_slippage,
             "mev_protection": self.mev_protection,
             "chart_previews": self.chart_previews,
-            "min_pos_value": self.min_pos_value
+            "min_pos_value": self.min_pos_value,
         }
 
     def to_json(self):

@@ -1,29 +1,30 @@
-import os
 import json
-import time
+import os
 import struct
+import time
+
 import aiohttp
-from celeritas.constants import aclient, LAMPORTS_PER_SOL
+from construct import BitsInteger
+from construct import BitsSwapped
+from construct import BitStruct
+from construct import Bytes
+from construct import BytesInteger
+from construct import Const
+from construct import Flag
+from construct import Int64ul
+from construct import Int8ul
+from construct import Padding
+from construct import Struct
+from solana.rpc.types import MemcmpOpts
+from solana.rpc.types import TokenAccountOpts
+from solders.instruction import AccountMeta
+from solders.instruction import Instruction
 from solders.pubkey import Pubkey
-from solders.instruction import Instruction, AccountMeta
-from solana.rpc.types import MemcmpOpts, TokenAccountOpts
-from spl.token.instructions import (
-    create_associated_token_account,
-    get_associated_token_address,
-)
-from construct import (
-    Struct,
-    Bytes,
-    Int8ul,
-    Int64ul,
-    Padding,
-    BitsInteger,
-    BitsSwapped,
-    BitStruct,
-    Const,
-    Flag,
-    BytesInteger,
-)
+from spl.token.instructions import create_associated_token_account
+from spl.token.instructions import get_associated_token_address
+
+from celeritas.constants import aclient
+from celeritas.constants import LAMPORTS_PER_SOL
 
 
 def get_offset(struct, field):
@@ -131,9 +132,7 @@ MARKET_LAYOUT = Struct(
     Padding(7),
 )
 
-SWAP_LAYOUT = Struct(
-    "instruction" / Int8ul, "amount_in" / Int64ul, "min_amount_out" / Int64ul
-)
+SWAP_LAYOUT = Struct("instruction" / Int8ul, "amount_in" / Int64ul, "min_amount_out" / Int64ul)
 
 PUMP_FUN_BONDING_CURVE_LAYOUT = Struct(
     Padding(8),
@@ -201,11 +200,7 @@ async def get_pool_id_by_mint(input_mint, output_mint):
 
 
 async def get_bonding_curve(bonding_curve):
-    data = (
-        await aclient.get_account_info_json_parsed(
-            bonding_curve, commitment="confirmed"
-        )
-    ).value.data
+    data = (await aclient.get_account_info_json_parsed(bonding_curve, commitment="confirmed")).value.data
     return PUMP_FUN_BONDING_CURVE_LAYOUT.parse(data)
 
 
@@ -253,9 +248,7 @@ async def get_transaction_keys(amm):
         "marketProgramId": OPEN_BOOK_PROGRAM,
         "market_id": marketId,
         "market_authority": Pubkey.create_program_address(
-            [bytes(marketId)]
-            + [bytes([market_decoded.vault_signer_nonce])]
-            + [bytes(7)],
+            [bytes(marketId)] + [bytes([market_decoded.vault_signer_nonce])] + [bytes(7)],
             OPEN_BOOK_PROGRAM,
         ),
         "market_base_vault": Pubkey.from_bytes(market_decoded.base_vault),
@@ -302,14 +295,15 @@ async def get_transaction_keys(amm):
 
     return transactionkeys
 
+
 async def is_jupiter_token(mint: str) -> bool:
     # Load the cache if it exists
     if os.path.exists(JUPITER_TOKENS_CACHE_FILE):
         with open(JUPITER_TOKENS_CACHE_FILE, "r") as f:
             cache = json.load(f)
         # Check if the cache is less than 24 hours old
-        if (time.time() - cache['timestamp']) < 3600:  # 3600 seconds = 1 hours
-            return mint in cache['tokens']
+        if (time.time() - cache["timestamp"]) < 3600:  # 3600 seconds = 1 hours
+            return mint in cache["tokens"]
 
     # Fetch the list of tokens from Jupiter API
     async with aiohttp.ClientSession() as session:
@@ -320,13 +314,10 @@ async def is_jupiter_token(mint: str) -> bool:
                 raise Exception(f"Failed to fetch Jupiter tokens: HTTP {response.status}")
 
     # Extract mint addresses
-    token_mints = {token['address'] for token in tokens}
+    token_mints = {token["address"] for token in tokens}
 
     # Update the cache
-    cache = {
-        'timestamp': time.time(),
-        'tokens': list(token_mints)
-    }
+    cache = {"timestamp": time.time(), "tokens": list(token_mints)}
     with open(JUPITER_TOKENS_CACHE_FILE, "w") as f:
         json.dump(cache, f)
 
@@ -334,18 +325,16 @@ async def is_jupiter_token(mint: str) -> bool:
     return mint in token_mints
 
 
-async def get_token_account(owner: Pubkey.from_string, mint: Pubkey.from_string, payer: Pubkey.from_string=None):
+async def get_token_account(
+    owner: Pubkey.from_string, mint: Pubkey.from_string, payer: Pubkey.from_string = None
+):
     try:
-        account_data = await aclient.get_token_accounts_by_owner(
-            owner, TokenAccountOpts(mint)
-        )
+        account_data = await aclient.get_token_accounts_by_owner(owner, TokenAccountOpts(mint))
         return account_data.value[0].pubkey, None
     except:
         swap_associated_token_address = get_associated_token_address(owner, mint)
         swap_token_account_Instructions = create_associated_token_account(
-            (payer if payer else owner), # payer
-            owner, # owner
-            mint
+            (payer if payer else owner), owner, mint  # payer  # owner
         )
         return swap_associated_token_address, swap_token_account_Instructions
 
@@ -373,9 +362,7 @@ async def get_quote_info_from_pool(token_in, token_in_amount, amm):
     out_balance = float(out_vault_balance.value.ui_amount_string)
     # Current price, meaning how many of ouput token do I get for one input token
     current_price = out_balance / in_balance
-    token_amount_out = (
-        -(in_balance * out_balance) / (in_balance + token_in_amount) + out_balance
-    )
+    token_amount_out = -(in_balance * out_balance) / (in_balance + token_in_amount) + out_balance
 
     price_inpact = round(1 - (token_amount_out / (token_in_amount * current_price)), 4)
     return {
@@ -398,9 +385,7 @@ def make_swap_instruction(
         AccountMeta(pubkey=accounts["amm_id"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=accounts["authority"], is_signer=False, is_writable=False),
         AccountMeta(pubkey=accounts["open_orders"], is_signer=False, is_writable=True),
-        AccountMeta(
-            pubkey=accounts["target_orders"], is_signer=False, is_writable=True
-        ),
+        AccountMeta(pubkey=accounts["target_orders"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=accounts["base_vault"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=accounts["quote_vault"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=SERUM_PROGRAM_ID, is_signer=False, is_writable=False),
@@ -408,29 +393,15 @@ def make_swap_instruction(
         AccountMeta(pubkey=accounts["bids"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=accounts["asks"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=accounts["event_queue"], is_signer=False, is_writable=True),
-        AccountMeta(
-            pubkey=accounts["market_base_vault"], is_signer=False, is_writable=True
-        ),
-        AccountMeta(
-            pubkey=accounts["market_quote_vault"], is_signer=False, is_writable=True
-        ),
-        AccountMeta(
-            pubkey=accounts["market_authority"], is_signer=False, is_writable=False
-        ),
-        AccountMeta(
-            pubkey=token_account_in, is_signer=False, is_writable=True
-        ),  # UserSourceTokenAccount
-        AccountMeta(
-            pubkey=token_account_out, is_signer=False, is_writable=True
-        ),  # UserDestTokenAccount
-        AccountMeta(
-            pubkey=owner.pubkey(), is_signer=True, is_writable=False
-        ),  # UserOwner
+        AccountMeta(pubkey=accounts["market_base_vault"], is_signer=False, is_writable=True),
+        AccountMeta(pubkey=accounts["market_quote_vault"], is_signer=False, is_writable=True),
+        AccountMeta(pubkey=accounts["market_authority"], is_signer=False, is_writable=False),
+        AccountMeta(pubkey=token_account_in, is_signer=False, is_writable=True),  # UserSourceTokenAccount
+        AccountMeta(pubkey=token_account_out, is_signer=False, is_writable=True),  # UserDestTokenAccount
+        AccountMeta(pubkey=owner.pubkey(), is_signer=True, is_writable=False),  # UserOwner
     ]
 
-    data = SWAP_LAYOUT.build(
-        dict(instruction=9, amount_in=int(amount_in), min_amount_out=min_amount_out)
-    )
+    data = SWAP_LAYOUT.build(dict(instruction=9, amount_in=int(amount_in), min_amount_out=min_amount_out))
     return Instruction(RAY_V4, data, keys)
 
 
@@ -438,9 +409,7 @@ GLOBAL = Pubkey.from_string("4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf")
 FEE_RECIPIENT = Pubkey.from_string("CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM")
 SYSTEM_PROGRAM = Pubkey.from_string("11111111111111111111111111111111")
 TOKEN_PROGRAM = Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
-ASSOC_TOKEN_ACC_PROG = Pubkey.from_string(
-    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-)
+ASSOC_TOKEN_ACC_PROG = Pubkey.from_string("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")
 RENT = Pubkey.from_string("SysvarRent111111111111111111111111111111111")
 PUMP_FUN_ACCOUNT = Pubkey.from_string("Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1")
 PUMP_FUN_PROGRAM = Pubkey.from_string("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P")
@@ -455,9 +424,7 @@ async def make_pump_fun_buy_instruction(
     bonding_curve,
     associated_bonding_curve,
 ):
-    slippage_bps = max(
-        300, slippage_bps
-    )
+    slippage_bps = max(300, slippage_bps)
     sol_in_lamports = int(amount_in * LAMPORTS_PER_SOL)
     bc = await get_bonding_curve(bonding_curve)
     K = bc.virtualSolReserves * bc.virtualTokenReserves
@@ -485,17 +452,14 @@ async def make_pump_fun_buy_instruction(
     binary_segments = [struct.pack("<Q", integer) for integer in integers]
     data = b"".join(binary_segments)
 
-    current_price = (bc.virtualTokenReserves / (10**6)) / (
-        bc.virtualSolReserves / (LAMPORTS_PER_SOL)
-    )
+    current_price = (bc.virtualTokenReserves / (10**6)) / (bc.virtualSolReserves / (LAMPORTS_PER_SOL))
     return Instruction(PUMP_FUN_PROGRAM, data, keys), {
         "current_price": current_price,
-        "price_inpact": round(
-            ((amount_in * current_price) / (token_out / 10**6) - 1), 4
-        ),
+        "price_inpact": round(((amount_in * current_price) / (token_out / 10**6) - 1), 4),
         "token_amount_out": token_out_with_slippage / 10**6,
         "min_token_amount_out": token_out_with_slippage / 10**6,
     }
+
 
 async def make_pump_fun_snipe_instruction(
     max_sol_cost,
@@ -523,7 +487,7 @@ async def make_pump_fun_snipe_instruction(
     ]
     # Define integer values
     buy = 16927863322537952870
-    tokens_out = int(output_amount*(10**6))
+    tokens_out = int(output_amount * (10**6))
     sol_in_lamports = int(max_sol_cost * LAMPORTS_PER_SOL)
     integers = [buy, tokens_out, sol_in_lamports]
     # Pack integers into binary segments
@@ -547,15 +511,11 @@ async def make_pump_fun_sell_instruction(
     bonding_curve,
     associated_bonding_curve,
 ):
-    slippage_bps = max(
-        300, slippage_bps
-    )  # duy to problems with calculating bonding curve
+    slippage_bps = max(300, slippage_bps)  # duy to problems with calculating bonding curve
     tokens_in = int(amount_in * (10**6))
     bc = await get_bonding_curve(bonding_curve)
     K = bc.virtualSolReserves * bc.virtualTokenReserves
-    min_lamports_out = (
-        -K / (tokens_in + bc.virtualTokenReserves) + bc.virtualSolReserves
-    )
+    min_lamports_out = -K / (tokens_in + bc.virtualTokenReserves) + bc.virtualSolReserves
     # Build account key list
     keys = [
         AccountMeta(pubkey=GLOBAL, is_signer=False, is_writable=False),
@@ -571,9 +531,7 @@ async def make_pump_fun_sell_instruction(
         AccountMeta(pubkey=PUMP_FUN_ACCOUNT, is_signer=False, is_writable=False),
         AccountMeta(pubkey=PUMP_FUN_PROGRAM, is_signer=False, is_writable=False),
     ]
-    min_lamports_out_with_slippage = int(
-        min_lamports_out / (1 + (slippage_bps / 10000))
-    )
+    min_lamports_out_with_slippage = int(min_lamports_out / (1 + (slippage_bps / 10000)))
     # magic number as sell instruction
     sell = 12502976635542562355
     integers = [sell, tokens_in, min_lamports_out_with_slippage]  # adding slippage
@@ -581,9 +539,7 @@ async def make_pump_fun_sell_instruction(
     binary_segments = [struct.pack("<Q", integer) for integer in integers]
     data = b"".join(binary_segments)
 
-    current_price = (bc.virtualSolReserves / (LAMPORTS_PER_SOL)) / (
-        bc.virtualTokenReserves / (10**6)
-    )
+    current_price = (bc.virtualSolReserves / (LAMPORTS_PER_SOL)) / (bc.virtualTokenReserves / (10**6))
     return Instruction(PUMP_FUN_PROGRAM, data, keys), {
         "current_price": current_price,
         "price_inpact": ((amount_in * current_price) / (min_lamports_out / LAMPORTS_PER_SOL) - 1),
