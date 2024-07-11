@@ -78,7 +78,7 @@ async def sniper_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, page=0
 
     balance = f"💰 Balance: <code>{nfpf(user.sol_in_wallet)} SOL (${nfpf(user.sol_in_wallet*sol_dollar_value())})</code>\n\n"
     text = (
-        f"🎯 <b>Pump.fun Sniper Menu</b>\n\n"
+        f"💊🎯 <b>Pump.fun Sniper Menu</b>\n\n"
         f"{balance}"
         f"{''.join(wallets_texts) if len(wallets_texts) else '➕ Add a sniping setup to get started.\n\n'}"
         f"🕒 <i>{utc_time_now()}</i>"

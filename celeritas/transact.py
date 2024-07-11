@@ -463,5 +463,5 @@ class Transact:
             )
             return txs.value
         except Exception as e:
-            print(e)
+            logger.info(f"Failed constructing or sending transaction: {e}")
             return None

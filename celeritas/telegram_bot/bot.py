@@ -39,7 +39,10 @@ logger = logging.getLogger(__name__)
 
 async def generate_start_message(user, new=False):
     message_text = (
-        (f"<i>Welcome {user.full_name} to the Celeritas bot!\n" "Your new trading partner.</i>\n\n")
+        (
+            f"<i>Welcome {user.full_name} to the TurboTendies bot!\n"
+            "Your powerful Solana trading companion.</i>\n\n"
+        )
         if new
         else ""
     )
@@ -47,15 +50,15 @@ async def generate_start_message(user, new=False):
     balance_str = (
         f"0 SOL ($0.00)"
         if balance == 0
-        else f"{round(balance, 4)} SOL (${round(balance*sol_dollar_value(), 2)})"
+        else f"{nfpf(balance)} SOL (${nfpf(balance*sol_dollar_value())})"
     )  # $VALUE should be calculated based on the current SOL price
 
     message_text += (
-        f'Solana · <a href="https://solscan.io/account/{user.wallet_public}">🅴</a>\n'
-        f"<code>{user.wallet_public}</code> (Tap to copy)\n\n"
+        f'Wallet · <a href="https://solscan.io/account/{user.wallet_public}">🌐</a>\n'
+        f"<code>{user.wallet_public}</code> (Tap me!)\n"
         f"Balance: <code>{balance_str}</code>\n\n"
-        "Click on the Refresh button to update your current balance.\n\n"
-        "Join our Telegram group @to_be_determined_69420 for users of Celeritas!\n\n"
+        "Click 'Refresh' to update your balance.\n\n"
+        "Join our Telegram group @to_be_determined_69420 for TurboTendies users!\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
 
@@ -67,21 +70,21 @@ async def generate_start_message(user, new=False):
         [
             # InlineKeyboardButton("Limit Orders", callback_data=str(LIMIT_ORDERS)),
             # InlineKeyboardButton("DCA Orders", callback_data=str(DCA_ORDERS)),
-            InlineKeyboardButton("Pump.fun Sniper", callback_data=str(NEW_SNIPER_MENU)),
+            InlineKeyboardButton("Pump.fun Sniper 💊🎯", callback_data=str(NEW_SNIPER_MENU)),
         ],
         [
             # InlineKeyboardButton("Copy Trade", callback_data=str(COPY_TRADE)),
         ],
         [
-            InlineKeyboardButton("Referrals", callback_data=str(REFERRALS)),
-            InlineKeyboardButton("Withdraw", callback_data=str(NEW_WITHDRAW_MENU)),
+            InlineKeyboardButton("Referrals 🌟", callback_data=str(REFERRALS)),
+            InlineKeyboardButton("Withdraw 📤", callback_data=str(NEW_WITHDRAW_MENU)),
         ],
         [
-            InlineKeyboardButton("Settings", callback_data=str(SETTINGS_NEW)),
+            InlineKeyboardButton("Settings ⚙️", callback_data=str(SETTINGS_NEW)),
         ],
         [
-            InlineKeyboardButton("Help", callback_data=str(HELP)),
-            InlineKeyboardButton("Refresh", callback_data=str(REFRESH)),
+            InlineKeyboardButton("Help ❓", callback_data=str(HELP)),
+            InlineKeyboardButton("Refresh 🔄", callback_data=str(REFRESH)),
         ],
     ]
 
@@ -169,8 +172,8 @@ async def help_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await query.answer()
 
     text = (
-        "👋 <b>Welcome to Celeritas Help!</b> 👋\n\n"
-        "🚀 <b>Celeritas</b> is your ultimate Solana trading companion, right here in Telegram! "
+        "👋 <b>Welcome to TurboTendies Help!</b> 👋\n\n"
+        "🚀 <b>TurboTendies</b> is your ultimate Solana trading companion, right here in Telegram! "
         "We're here to make trading smooth and fast, whether you're a seasoned pro or just starting out. 💰\n\n"
         "<b>Here's a quick rundown of our superpowers:</b>\n\n"
         "✨ <b>Buying Tokens:</b>\n"
@@ -187,9 +190,13 @@ async def help_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         "  - <b>Confirm Trades:</b> Add an extra layer of security by requiring confirmation before each trade.\n"
         "  - <b>MEV Protection:</b> Protect yourself from front-running bots (may increase execution time).\n"
         "  - <b>Auto Buy:</b> Enable automatic purchases by sending a token mint as a message.\n"
-        "    - ⚠️ Use with caution! This feature will execute trades automatically based on your settings.\n\n"
+        "    - ⚠️ Use with caution! This feature will execute trades automatically based on your settings.\n"
+        "  - <b>Min Pos Value:</b> Set the minimum value for token positions to appear in the Sell menu.\n\n"
         "🏹 <b>Pump.fun Sniper:</b>\n"
-        "  - Coming Soon! ⏳ Be the first to snatch up tokens on pump.fun.\n\n"
+        "  - Be the first to snatch up tokens on pump.fun. \n"
+        "  - Add wallets you want to follow to be notified of new token launches. \n"
+        "  - Configure your sniping settings for each wallet.\n"
+        "  -  The bot will automatically try to buy tokens when a new mint is detected.\n\n"
         "🤝 <b>Referrals:</b>\n"
         "  - Share the love! Invite your friends and earn rewards for every trade they make.\n\n"
         "➡️ <b>Withdraw:</b>\n"
@@ -215,11 +222,11 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     referral_link = f"t.me/{context.bot.username}?start={user_id}"
 
     text = (
-        "🌟 <b>Celeritas Referral Program</b> 🌟\n\n"
+        "🌟 <b>TurboTendies Referral Program</b> 🌟\n\n"
         "Share the trading magic and rake in the rewards! 💰\n\n"
         f"<b>Your Unique Referral Link:</b>\n<code>{referral_link}</code>\n\n"
         "🤝 <b>How It Works:</b>\n"
-        "• Invite your friends to join Celeritas using your link.\n"
+        "• Invite your friends to join TurboTendies using your link.\n"
         "• You'll earn a percentage of the trading fees they pay when they use the bot.\n"
         "• The more friends you invite, the more you earn! 📈\n\n"
         "💰 <b>Earnings Breakdown:</b>\n"

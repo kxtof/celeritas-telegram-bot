@@ -72,6 +72,8 @@ def update_fees(user_id, base_fee, depth):
     if not user_id or depth > 4:
         return
     user = user_db.get_user(user_id)
+    if not user:
+        return
     fee_for_trade = user.referral_share[depth] * base_fee
     user_db.update_attribute(user_id, "trading_fees_earned", user.trading_fees_earned + fee_for_trade)
     update_fees(user.referrer, base_fee, depth + 1)
@@ -92,10 +94,10 @@ def generate_success_message(tx_signature: str, tx_data: dict) -> str:
 
 def generate_failure_message(tx_signature: str) -> str:
     return (
-        "❗ <b>Transaction Status Update</b>\n\n"
+        "😅 <b>Oops! Your transaction took a detour...</b>\n\n"
         "We couldn't confirm the success of your transaction. "
-        "Consider using a higher Priority Fees.\n\n"
-        f"Tx details: <a href='https://solscan.io/tx/{tx_signature}'>View on Solscan</a>\n\n"
+        "Consider using a higher Priority Fee for a smoother ride. 💨\n\n"
+        f"🔎 Tx details: <a href='https://solscan.io/tx/{tx_signature}'>View on Solscan</a>\n\n"
     )
 
 
@@ -113,7 +115,7 @@ async def check_transaction(
     tx = await fetch_transaction(tx_signature)
 
     if tx.value and not tx.value.transaction.meta.err:
-        # Add transaction to UserDB only if it hasn't been added before
+        # Append the transaction details to the user's transaction history
         user = user_db.get_user(user_id)
         tx_data = parse_transaction_data(tx, user_pubkey, mint)
 

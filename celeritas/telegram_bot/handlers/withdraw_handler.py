@@ -369,14 +369,13 @@ async def process_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE, d
     if txs:
         text = (
             f"🎉 <b>Woohoo! Your {nfpf(options['percentage_to_withdraw'])}% withdrawal is zooming through cyberspace!</b>\n\n"
-            f"🕵️‍♂️ Want to play detective? Check out the action here:\n"
-            f'<a href="https://solscan.io/tx/{txs}">Solscan</a>\n\n'
+            f"🔍 Tx details: <a href='https://solscan.io/tx/{txs}'>View on Solscan</a>"
         )
     else:
         text = (
-            f"😅 <b>Oops! Looks like our digital courier stumbled...</b>\n"
-            f"🆘 Don't panic! If you think this is a glitch in the Matrix, "
-            f"give our support team a shout. They're itching to play tech superhero!"
+            f"⚠️ <b>Withdrawal Error</b>\n\n"
+            f"We encountered an issue processing your withdrawal request. "
+            f"Please try again later or contact our support team for assistance."
         )
 
     await message.edit_text(text=text, parse_mode="HTML", disable_web_page_preview=True)

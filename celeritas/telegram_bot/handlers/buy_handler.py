@@ -347,14 +347,15 @@ async def execute_buy_order(
     )
     text = (
         (
-            f"🚀 <b>Buy order for {amount} SOL sent!</b>\n\n"
-            f'Transaction details: <a href="https://solscan.io/tx/{txs}">View on Solscan</a>\n'
-            f"Slippage: <b>{slippage}%</b>\n\n"
-            f"<i>Waiting for Tx Confirmation...</i>"
+            f"🚀 <b>Your buy order for {amount} SOL has been sent!</b>\n\n"
+            f"🕵️‍♂️ Want to follow the progress? Check out the transaction here:\n"
+            f'<a href="https://solscan.io/tx/{txs}">Solscan</a>\n'
+            f"📈 Slippage used: <b>{slippage}%</b>\n\n"
+            f"⏳  <i>We're waiting for confirmation to hit your wallet...</i>"
         )
         if txs
         else (
-            f"<b>Failed fetching or sending transaction!</b>\n"
+            f"😅 <b>Oops! Failed fetching or sending transaction!</b>\n"
             "Contact support if you believe this to be an issue."
         )
     )
