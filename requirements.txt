@@ -6,6 +6,7 @@ httpx==0.27.0
 jupiter_python_sdk==0.0.2.0
 pymongo==4.8.0
 python-telegram-bot==21.3
+python-telegram-bot[job-queue]
 Requests==2.32.3
 solana==0.34.2
 solders==0.21.0

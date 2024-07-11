@@ -30,7 +30,6 @@ application = (
     .token(config.telegram_bot_token)
     .build()
 )
-
 # Database
 db = UserDB()
 

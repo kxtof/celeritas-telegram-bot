@@ -10,10 +10,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application's code
 COPY celeritas/ ./celeritas/
-COPY main.py .
+COPY run_telegram_bot.py .
 
 # Create a directory for persistent cache data
 RUN mkdir -p /app/data
 
 # Run the application
-CMD ["python", "main.py"]
+CMD ["python", "run_telegram_bot.py"]
