@@ -5,15 +5,28 @@ services:
     image: mongo:latest
     container_name: celeritas_mongodb
     ports:
-      - "27017:27017"
-    volumes:
-      - ./data/mongo_data:/data/db
+      - "${MONGO_PORT:-27017}:27017"
+#    volumes:
+#      - ./data/mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+
   bot:
     build: .
+    container_name: celeritas_telegram_bot
     volumes:
       - ./data:/app/data
     network_mode: "host"
     command: python main.py
+    depends_on: 
+      - mongodb
+    environment:
+      - TELEGRAM_BOT_TOKEN
+      - SOLANA_RPC_URL
+      - SOLANA_WS_URL
+      - PLATFORM_FEE_PUBKEY
+      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
 
-volumes:
-  mongo_data:
+#volumes:
+#  mongo_data:

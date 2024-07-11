@@ -1,7 +1,0 @@
-{
-    "telegram_bot_token": null,
-    "solana_rpc_url": "https://api.mainnet-beta.solana.com",
-    "solana_ws_url": "wss://api.mainnet-beta.solana.com",
-    "platform_fee_pubkey": null,
-    "mongodb_url": "mongodb://localhost:27017/"
-}

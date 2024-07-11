@@ -8,29 +8,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class Config:
-    def __init__(self, config_file='config.json', default_config_file='config.default.json'):
-        self.config_file = config_file
-        self.default_config_file = default_config_file
-        self.config = self._load_config()
-
-    def _load_config(self):
-        if os.path.exists(self.config_file):
-            with open(self.config_file, 'r') as f:
-                return json.load(f)
-        elif os.path.exists(self.default_config_file):
-            logger.info(f"Warning: Using default configuration file '{self.default_config_file}'")
-            with open(self.default_config_file, 'r') as f:
-                return json.load(f)
-        else:
-            raise FileNotFoundError(f"Neither '{self.config_file}' nor '{self.default_config_file}' found.")
+    def __init__(self):
+        pass
 
     def get(self, key, default=None):
         # First, try to get the value from an environment variable
-        env_value = os.environ.get(f"CELERITAS_{key.upper()}")
+        env_value = os.environ.get(key.upper())
         if env_value is not None:
             return env_value
-        # If not found in environment, fall back to the config file
-        return self.config.get(key, default)
+        logger.info(f"Missing env value: {key.upper()}")
+        return env_value
 
     @property
     def telegram_bot_token(self):
@@ -50,6 +37,9 @@ class Config:
 
     @property
     def mongodb_url(self):
-        return self.get('mongodb_url')
+        url =  self.get('mongodb_url')
+        if url: return url
+        username, password, port = self.get('mongo_username'), self.get('mongo_password'), self.get('mongo_port')
+        return f"mongodb://{username}:{password}@mongodb:{port}"
 
 config = Config()
