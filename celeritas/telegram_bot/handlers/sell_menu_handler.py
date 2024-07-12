@@ -118,7 +118,7 @@ async def token_menu(
     text = (
         f"<b>To {action_text} a certain token, click on the corresponding button.</b>\n"
         f"{balance}"
-        f"{'\n'.join(token_texts) if len(token_texts) else f"<i>You don't have any tokens to {action_text} yet.\nClick the '🔄 Refresh' button to update your current balance or buy some tokens</i>"}\n\n"
+        f"{'\n'.join(token_texts) if len(token_texts) else f"<i>You don't have any tokens to {action_text} yet. You can refresh your balance or buy some tokens by clicking the '🔄 Refresh' button.</i>"}\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
     message_func = query.message.reply_text if new else query.edit_message_text

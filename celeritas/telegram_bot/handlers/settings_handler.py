@@ -29,7 +29,7 @@ FAST_FEE, LIGHTNING_FEE = 0.001, 0.008
 
 async def generate_settings_keyboard(user_settings) -> InlineKeyboardMarkup:
     # Handle speed settings
-    fast, lightning, custom = "Rapid 🚀", "Lightning ⚡", "Custom ✏️"
+    fast, lightning, custom = "Fast 🚀", "Lightning ⚡", "Custom ✏️"
     if user_settings.priority_fee == FAST_FEE:
         fast = "🔵 " + fast
     elif user_settings.priority_fee == LIGHTNING_FEE:
@@ -79,17 +79,17 @@ async def generate_settings_keyboard(user_settings) -> InlineKeyboardMarkup:
 
 def settings_text():
     return (
-        "🛠️ <b>Settings Panel</b> 🛠️\n\n"
-        "Customize your trading experience:\n\n"
-        "📊 <b>Priority Fees:</b>\n"
-        "  - Set transaction speed\n\n"
-        "💹 <b>Trading Settings:</b>\n"
-        "  - Configure buy/sell parameters\n\n"
-        "⚙️ <b>General Settings:</b>\n"
-        "  - <b>Confirm Trades:</b> Require user confirmation before executing trades\n"
-        "  - <b>MEV Protection:</b> Guards against front-running, may increase execution time\n\n"
-        "<i>Click on any button to adjust its setting.</i>\n\n"
-        "❓ For more information, type /faq\n\n"
+        "🚀 <b><u>Priority Fees:</u></b>\n"
+        f"<b>Fast</b>: <code>{FAST_FEE} SOL</code> - Average speed, good for most transactions.\n"
+        f"<b>Lightning</b>: <code>{LIGHTNING_FEE} SOL</code> - Fastest speed, ensures high success rate.\n"
+        "<b>Custom</b>: Set your own fee value for more precise control.\n\n"
+        "🤖 <b><u>Auto Buy:</u></b>\n"
+        "Enable automated token purchases upon sending a token mint as a message.\n"
+        "⚠️ <i>Use Auto Buy cautiously as it executes trades automatically based on your settings!</i>\n\n"
+        "<u><b>Confirm Trades</b></u>\nEnable/disable confirmation prompts before executing any buy or sell order. \n\n"
+        "<u><b>MEV Protection</b></u>\nReduce the risk of front-running bots by adding additional steps to trades. Be aware, this can lead to slower execution times. 🐢\n\n"
+        "<u><b>Min Pos Value</b></u>\nSet the minimum USD value for token positions to appear in the sell menu. \n\n"
+        "<u><b>Chart Previews</b></u>\nEnable/disable previews for links with trading chart data (like Dexscreener). 📈\n\n"
         f"🕒 <i>{utc_time_now()}</i>\n\n"
     )
 

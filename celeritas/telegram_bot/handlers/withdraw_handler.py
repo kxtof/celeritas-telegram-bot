@@ -366,7 +366,7 @@ async def process_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE, d
     options = context.user_data[f"withdraw_message_options_{mint}"]
 
     message = await query.message.reply_text(
-        text="🔍 Processing your withdrawal... Hang tight! 💼💨",
+        text="🔍 Processing your withdrawal... Hang tight!",
         parse_mode="HTML",
         disable_web_page_preview=True,
     )

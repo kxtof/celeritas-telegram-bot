@@ -326,7 +326,7 @@ class Transact:
 
     async def buy_pump_fun(self, output_mint, amount, slippage_bps, token):
         output_mint = Pubkey.from_string(output_mint)
-        # the funnction has to check for token account existence, create it if not existent
+        # Check for token account existence, create one if not existent
         swap_token_account, swap_token_account_ix = await get_token_account(
             self.keypair.pubkey(), output_mint
         )

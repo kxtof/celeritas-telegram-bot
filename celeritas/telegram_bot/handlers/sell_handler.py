@@ -362,7 +362,7 @@ async def process_sell(update: Update, context: ContextTypes.DEFAULT_TYPE, delet
     options = context.user_data[f"sell_message_options_{mint}"]
 
     message = await query.message.reply_text(
-        text="🔍 Hunting for the perfect quote... Hang tight! 💼💨",
+        text="🔍 Hunting for the perfect quote... Hang tight!",
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
