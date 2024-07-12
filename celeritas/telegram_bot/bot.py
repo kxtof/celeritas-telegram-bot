@@ -1,9 +1,6 @@
 import logging
 from warnings import filterwarnings
-
 from telegram.warnings import PTBUserWarning
-# Remove per_message, ... warnings
-
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -32,7 +29,6 @@ from celeritas.telegram_bot.user_sequential_update_processor import UserSequenti
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
-# set higher logging level for httpx to avoid all GET and POST requests being logged
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
@@ -42,7 +38,7 @@ async def generate_start_message(user, new=False):
         (
             f"<i>Welcome {user.full_name} to the TurboTendies bot!\n"
             "Your powerful Solana trading companion.</i>\n\n"
-        )
+        )   
         if new
         else ""
     )
@@ -55,7 +51,7 @@ async def generate_start_message(user, new=False):
 
     message_text += (
         f'Wallet · <a href="https://solscan.io/account/{user.wallet_public}">🌐</a>\n'
-        f"<code>{user.wallet_public}</code> (Tap me!)\n"
+        f"<code>{user.wallet_public}</code> (Tap me)\n"
         f"Balance: <code>{balance_str}</code>\n\n"
         "Click 'Refresh' to update your balance.\n\n"
         "Join our Telegram group @to_be_determined_69420 for TurboTendies users!\n\n"
@@ -258,6 +254,7 @@ async def close_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     query = update.callback_query
     await query.answer()
     await query.message.delete()
+    return MAIN_MENU
 
 
 def main() -> None:

@@ -290,6 +290,7 @@ async def process_custom_input(update: Update, context: ContextTypes.DEFAULT_TYP
         )
         return BUY_TOKEN
     except ValueError:
+        await delete_messages(context, chat_id, update.message.message_id)
         await update.message.reply_text("Invalid input. Please enter a valid number.")
         return CUSTOM_BUY_SLIPPAGE if option == "slippage" else CUSTOM_BUY_AMOUNT
 

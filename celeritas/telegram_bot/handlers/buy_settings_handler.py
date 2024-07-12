@@ -139,6 +139,7 @@ async def buy_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
         return BUY_SETTINGS
     except ValueError:
+        await delete_messages(context, chat_id, update.message.message_id)
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=context.user_data.get("buy_message_id"),
@@ -178,6 +179,7 @@ async def buy_slippage_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return BUY_SETTINGS
     except ValueError:
+        await delete_messages(context, chat_id, update.message.message_id)
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=context.user_data.get("buy_message_id"),

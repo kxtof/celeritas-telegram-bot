@@ -172,7 +172,7 @@ async def set_custom_amount_to_withdraw(update: Update, context: ContextTypes.DE
     query = update.callback_query
     await query.answer()
     message = await query.message.reply_text(text="Please enter your custom withdraw %:")
-    context.user_data[f"custom_percentage_to_withdraw_message_id"] = message.message_id
+    context.user_data["custom_percentage_to_withdraw_message_id"] = message.message_id
     context.user_data["last_mint"] = context.user_data[query.message.message_id]
     return CUSTOM_PERCENTAGE
 
@@ -193,7 +193,7 @@ async def custom_percentage_input(update: Update, context: ContextTypes.DEFAULT_
         await delete_messages(
             context,
             chat_id,
-            context.user_data.get(f"custom_percentage_to_withdraw_message_id"),
+            context.user_data.get("custom_percentage_to_withdraw_message_id"),
             update.message.message_id,
         )
         await edit_message(
@@ -205,7 +205,12 @@ async def custom_percentage_input(update: Update, context: ContextTypes.DEFAULT_
         )
         return WITHDRAW
     except ValueError:
-        await update.message.reply_text("❗ Invalid input. Please enter a valid percentage.")
+        await delete_messages(context, chat_id, update.message.message_id)
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=context.user_data.get("custom_percentage_to_withdraw_message_id"),
+            text="❗ Invalid input. Please enter a valid percentage.",
+        )
         return CUSTOM_PERCENTAGE
 
 
@@ -213,7 +218,7 @@ async def set_wallet_for_withdraw(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
     message = await query.message.reply_text(text="Please enter your withdraw wallet public key.")
-    context.user_data[f"withdraw_wallet_message_id"] = message.message_id
+    context.user_data["withdraw_wallet_message_id"] = message.message_id
     context.user_data["last_mint"] = context.user_data[query.message.message_id]
     return WALLET_FOR_WITHDRAW_INPUT
 
@@ -232,7 +237,7 @@ async def wallet_for_withdraw_input(update: Update, context: ContextTypes.DEFAUL
         await delete_messages(
             context,
             chat_id,
-            context.user_data.get(f"withdraw_wallet_message_id"),
+            context.user_data.get("withdraw_wallet_message_id"),
             update.message.message_id,
         )
         await edit_message(
@@ -244,7 +249,12 @@ async def wallet_for_withdraw_input(update: Update, context: ContextTypes.DEFAUL
         )
         return WITHDRAW
     except ValueError as e:
-        await update.message.reply_text("❗ Invalid address. Please provide a valid one.")
+        await delete_messages(context, chat_id, update.message.message_id)
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=context.user_data.get("withdraw_wallet_message_id"),
+            text="❗ Invalid address. Please provide a valid one.",
+        )
         return WALLET_FOR_WITHDRAW_INPUT
 
 
@@ -252,7 +262,7 @@ async def set_whole_amount_for_withdraw(update: Update, context: ContextTypes.DE
     query = update.callback_query
     await query.answer()
     message = await query.message.reply_text(text="Please enter your amount X for withdrawal.")
-    context.user_data[f"withdraw_amount_message_id"] = message.message_id
+    context.user_data["withdraw_amount_message_id"] = message.message_id
     context.user_data["last_mint"] = context.user_data[query.message.message_id]
     return WHOLE_AMOUNT_FOR_WITHDRAW_INPUT
 
@@ -275,7 +285,7 @@ async def whole_amount_for_withdraw_input(update: Update, context: ContextTypes.
         await delete_messages(
             context,
             chat_id,
-            context.user_data.get(f"withdraw_amount_message_id"),
+            context.user_data.get("withdraw_amount_message_id"),
             update.message.message_id,
         )
         await edit_message(
@@ -287,7 +297,13 @@ async def whole_amount_for_withdraw_input(update: Update, context: ContextTypes.
         )
         return WITHDRAW
     except ValueError:
-        await update.message.reply_text("❗ Invalid input. Please enter a valid amount.")
+        await delete_messages(context, chat_id, update.message.message_id)
+        await update.message.reply_text()
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=context.user_data.get("withdraw_amount_message_id"),
+            text="❗ Invalid input. Please enter a valid amount.",
+        )
         return WHOLE_AMOUNT_FOR_WITHDRAW_INPUT
 
 

@@ -16,6 +16,8 @@ from celeritas.telegram_bot.handlers.auto_buy_handler import autobuy_conv_handle
 from celeritas.telegram_bot.handlers.auto_sell_handler import autosell_conv_handler
 from celeritas.telegram_bot.handlers.buy_settings_handler import buy_settings_handler
 from celeritas.telegram_bot.handlers.sell_settings_handler import sell_settings_handler
+from celeritas.telegram_bot.handlers.wallet_settings_handler import wallet_settings_handler
+from celeritas.telegram_bot.utils import nice_float_price_format as nfpf
 from celeritas.telegram_bot.utils import delete_messages
 from celeritas.telegram_bot.utils import edit_message
 from celeritas.telegram_bot.utils import utc_time_now
@@ -42,7 +44,7 @@ async def generate_settings_keyboard(user_settings) -> InlineKeyboardMarkup:
     autobuy = toggle_button("Auto Buy", user_settings.autobuy)
     mev_protect = toggle_button("MEV Protection", user_settings.mev_protection)
     chart_previews = toggle_button("Chart Previews", user_settings.chart_previews)
-    min_pos_value = f"Min Pos Value: {user_settings.min_pos_value if user_settings.min_pos_value else '--'}"
+    min_pos_value = f"Min Pos Value: {f"{nfpf(user_settings.min_pos_value)} USD" if user_settings.min_pos_value else '--'}"
 
     keyboard = [
         [InlineKeyboardButton("--Priority Fees--", callback_data="none")],
@@ -65,7 +67,10 @@ async def generate_settings_keyboard(user_settings) -> InlineKeyboardMarkup:
             InlineKeyboardButton(autobuy, callback_data=str(AUTO_BUY)),
             InlineKeyboardButton(chart_previews, callback_data=str(CHART_PREVIEWS)),
         ],
-        [InlineKeyboardButton(min_pos_value, callback_data=str(MIN_POS_VALUE))],
+        [
+            InlineKeyboardButton(min_pos_value, callback_data=str(MIN_POS_VALUE)),
+            InlineKeyboardButton("Wallet Settings" ,callback_data=str(WALLET_SETTINGS)),
+        ],
         [InlineKeyboardButton("❌ Close", callback_data=str(CLOSE_SETTINGS_MENU))],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -115,7 +120,6 @@ async def close_settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Delete the settings message
     chat_id = query.message.chat_id
     await context.bot.delete_message(chat_id, query.message.message_id)
-    return ConversationHandler.END
 
 
 async def settings_new(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -178,7 +182,12 @@ async def custom_fee_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
         return SETTINGS
     except ValueError:
-        await update.message.reply_text("Invalid input. Please enter a valid number for the custom fee.")
+        await delete_messages(context, chat_id, update.message.message_id)
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=context.user_data.get("custom_fee_message_id"),
+            text="Invalid input. Please enter a valid number for the custom fee.",
+        )
         return CUSTOM_FEE
 
 
@@ -196,14 +205,12 @@ async def min_pos_value_input(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         min_pos_value = max(0, float(update.message.text))
         current_user_settings = user_db.update_user_settings(user_id, "min_pos_value", min_pos_value)
-
         await delete_messages(
             context,
             chat_id,
             context.user_data.get("min_pos_value_message_id"),
             update.message.message_id,
         )
-
         await edit_message(
             context,
             chat_id,
@@ -211,10 +218,14 @@ async def min_pos_value_input(update: Update, context: ContextTypes.DEFAULT_TYPE
             settings_text(),
             await generate_settings_keyboard(current_user_settings),
         )
-
         return SETTINGS
     except ValueError:
-        await update.message.reply_text("Invalid input. Please enter a valid number.")
+        await delete_messages(context, chat_id, update.message.message_id)
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=context.user_data.get("min_pos_value_message_id"),
+            text="Invalid input. Please enter a valid number.",
+        )
         return MIN_POS_VALUE_INPUT
 
 
@@ -279,6 +290,7 @@ settings_conv_handler = ConversationHandler(
             autosell_conv_handler,
             buy_settings_handler,
             sell_settings_handler,
+            wallet_settings_handler,
         ],
         CUSTOM_FEE: [MessageHandler(filters.TEXT & ~filters.COMMAND, custom_fee_input)],
         MIN_POS_VALUE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, min_pos_value_input)],

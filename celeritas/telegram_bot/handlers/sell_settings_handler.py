@@ -128,6 +128,7 @@ async def sell_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         )
         return SELL_SETTINGS
     except ValueError:
+        await delete_messages(context, chat_id, update.message.message_id)
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=context.user_data.get("sell_message_id"),
@@ -139,7 +140,7 @@ async def sell_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def sell_slippage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    message = await query.message.reply_text(text="Please enter your Sell slippage in %: (e.g. 25 or 25%)")
+    message = await query.message.reply_text(text="Please enter your Sell slippage in % (e.g. 25 or 25%):")
     context.user_data["sell_message_id"] = message.message_id
     return SELL_SLIPPAGE_INPUT
 
@@ -167,6 +168,7 @@ async def sell_slippage_input(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         return SELL_SETTINGS
     except ValueError:
+        await delete_messages(context, chat_id, update.message.message_id)
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=context.user_data.get("sell_message_id"),

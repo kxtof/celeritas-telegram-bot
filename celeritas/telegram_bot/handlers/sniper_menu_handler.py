@@ -346,7 +346,12 @@ async def process_custom_input_sniper(update: Update, context: ContextTypes.DEFA
         )
         return SNIPE
     except ValueError:
-        await update.message.reply_text("Invalid input. Please enter a valid value.")
+        await delete_messages(context, chat_id, update.message.message_id)
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=context.user_data.get(f"custom_{option}_message_id"),
+            text="Invalid input. Please enter a valid value.",
+        )
         return (
             CUSTOM_WALLET_SNIPER
             if option == "wallet"
