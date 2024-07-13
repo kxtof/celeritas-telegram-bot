@@ -50,7 +50,7 @@ async def generate_start_message(user, new=False):
     )  # $VALUE should be calculated based on the current SOL price
 
     message_text += (
-        f'Wallet · <a href="https://solscan.io/account/{user.wallet_public}">🌐</a>\n'
+        f'<b>Wallet</b> · <a href="https://solscan.io/account/{user.wallet_public}">🌐</a>\n'
         f"<code>{user.wallet_public}</code> (Tap me)\n"
         f"Balance: <code>{balance_str}</code>\n\n"
         "Click 'Refresh' to update your balance.\n\n"
@@ -142,19 +142,21 @@ async def refresh(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def prompt_for_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
-    await query.answer()
+    if query: await query.answer()
+
     user_id = update.effective_user.id
     text = (
         "🪙 <b>Ready to buy your token?</b> 🪙\n\n"
-        "Just <b>paste the token mint</b> you'd like to purchase below. 📥\n"
-        "We're here to make your purchase smooth and easy! 😊"
+        "Just <b>paste the token mint</b> you'd like to purchase below. 📥\n\n"
+        "ℹ <i>You can always paste a mint and the bot will return the buy menu, no need to tap the buy button.</i>"
     )
 
     reply_markup = InlineKeyboardMarkup(
         [[InlineKeyboardButton("❌ Close", callback_data=str(CLOSE_MESSAGE))]]
     )
 
-    await query.message.reply_text(
+    message_func = query.message.reply_text if query else update.message.reply_text
+    await message_func(
         text=text,
         parse_mode="HTML",
         reply_markup=reply_markup,
@@ -165,7 +167,7 @@ async def prompt_for_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def help_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
-    await query.answer()
+    if query: await query.answer()
 
     text = (
         "🚀🐔 <b>TurboTendies</b> is your ultimate Solana trading companion, right here in Telegram! "
@@ -202,7 +204,9 @@ async def help_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     reply_markup = InlineKeyboardMarkup(
         [[InlineKeyboardButton("❌ Close", callback_data=str(CLOSE_MESSAGE))]]
     )
-    await query.message.reply_text(
+    # Handle updates from both the callbackqueryhandler and the commandhandler
+    message_func = query.message.reply_text if query else update.message.reply_text
+    await message_func(
         text=text, reply_markup=reply_markup, parse_mode="HTML", disable_web_page_preview=True
     )
     return MAIN_MENU
@@ -210,7 +214,8 @@ async def help_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
-    await query.answer()
+    if query: await query.answer()
+    
     user_id = update.effective_user.id
     user = user_db.get_user(user_id)
     referral_link = f"t.me/{context.bot.username}?start={user_id}"
@@ -224,12 +229,12 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "• You'll earn a percentage of the trading fees they pay when they use the bot.\n"
         "• The more friends you invite, the more you earn! 📈\n\n"
         "💰 <b>Earnings Breakdown:</b>\n"
-        "• You get <b>30%</b> of your direct referrals' trading fees. 🎉\n"
+        f"• You get <b>{nfpf(user.referral_share[0]*100)}%</b> of your direct referrals' trading fees. 🎉\n"
         "• You also earn from users referred by your referrals, up to 5 levels deep! 🤯\n"
-        " • Level 2: 3.5%\n"
-        " • Level 3: 2.5%\n"
-        " • Level 4: 2%\n"
-        " • Level 5: 1%\n\n"
+        f" • Level 2: {nfpf(user.referral_share[1]*100)}%\n"
+        f" • Level 3: {nfpf(user.referral_share[2]*100)}%\n"
+        f" • Level 4: {nfpf(user.referral_share[3]*100)}%\n"
+        f" • Level 5: {nfpf(user.referral_share[4]*100)}%\n\n"
         "📊 <b>Your Referral Stats:</b>\n"
         f"• Friends Invited: <code>{user.users_referred}</code>\n"
         f"• Total Earnings: <code>{nfpf(user.trading_fees_earned)} SOL</code>\n"
@@ -242,7 +247,8 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         [[InlineKeyboardButton("❌ Close", callback_data=str(CLOSE_MESSAGE))]]
     )
 
-    await query.message.reply_text(
+    message_func = query.message.reply_text if query else update.message.reply_text
+    await message_func(
         text=text, reply_markup=reply_markup, parse_mode="HTML", disable_web_page_preview=True
     )
     return MAIN_MENU
@@ -271,9 +277,12 @@ def main() -> None:
                 CallbackQueryHandler(refresh, pattern="^" + "start" + "$"),
                 CallbackQueryHandler(refresh, pattern="^" + str(REFRESH) + "$"),
                 CallbackQueryHandler(prompt_for_token, pattern="^" + str(BUY) + "$"),
+                CommandHandler("buy", prompt_for_token),
                 CallbackQueryHandler(help_message, pattern="^" + str(HELP) + "$"),
+                CommandHandler("help", help_message),
                 CallbackQueryHandler(close_message, pattern="^" + str(CLOSE_MESSAGE) + "$"),
                 CallbackQueryHandler(referrals, pattern="^" + str(REFERRALS) + "$"),
+                CommandHandler("referrals", referrals),
                 settings_conv_handler,
                 sell_menu_conv_handler,
                 withdraw_menu_conv_handler,

@@ -382,7 +382,7 @@ async def process_buy(update: Update, context: ContextTypes.DEFAULT_TYPE, delete
     options = context.user_data[f"buy_message_options_{mint}"]
 
     message = await query.message.reply_text(
-        text="🔍 Hunting for the perfect quote... Hang tight! 💼💨",
+        text="🔍 Hunting for the perfect quote... Hang tight!",
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
@@ -445,7 +445,7 @@ async def handle_potential_mint(update: Update, context: ContextTypes.DEFAULT_TY
             amount = user.settings.autobuy_amount
             slippage = user.settings.autobuy_slippage
             message = await update.message.reply_text(
-                text="🔍 Autobuy enabled. Hunting for the perfect quote... 💼💨",
+                text="🔍 Autobuy enabled. Hunting for the perfect quote...",
                 parse_mode="HTML",
                 disable_web_page_preview=True,
             )
@@ -454,7 +454,7 @@ async def handle_potential_mint(update: Update, context: ContextTypes.DEFAULT_TY
         return await buy_token(update, context, new=True, token_mint=text)
     else:
         await update.message.reply_text(
-            text="⚠️ <b>Token Not Found</b> ⚠️\n\nThe mint provided couldn't be verified as a valid Solana token. Please check the mint address and try again. 💡",
+            text="⚠️ <b>SPL Token Not Found</b> ⚠️\n\n Please check the mint address and try again. 💡",
             parse_mode="HTML",
         )
 

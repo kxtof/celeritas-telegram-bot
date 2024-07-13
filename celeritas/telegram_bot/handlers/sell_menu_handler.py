@@ -101,7 +101,8 @@ async def token_menu(
     user_id = update.effective_user.id
     user = user_db.get_user(user_id)
     query = update.callback_query
-    await query.answer()
+    if query: await query.answer()
+
     tokens, has_more = await get_paginated_tokens(user, page, TOKENS_PER_PAGE, action_type)
     tokens_info = await get_tokens(tokens)
     reply_markup = await generate_menu_keyboard(
@@ -121,7 +122,7 @@ async def token_menu(
         f"{'\n'.join(token_texts) if len(token_texts) else f"<i>You don't have any tokens to {action_text} yet. You can refresh your balance or buy some tokens by clicking the '🔄 Refresh' button.</i>"}\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
-    message_func = query.message.reply_text if new else query.edit_message_text
+    message_func = (query.message.reply_text if query else update.message.reply_text) if new else query.edit_message_text
     message = await message_func(
         text=text, reply_markup=reply_markup, parse_mode="HTML", disable_web_page_preview=True
     )
@@ -197,7 +198,10 @@ async def withdraw_menu_page(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
 
 sell_menu_conv_handler = ConversationHandler(
-    entry_points=[CallbackQueryHandler(sell_menu_new, pattern="^" + str(NEW_SELL_MENU) + "$")],
+    entry_points=[
+        CallbackQueryHandler(sell_menu_new, pattern="^" + str(NEW_SELL_MENU) + "$"),
+        CommandHandler("sell", sell_menu_new),
+    ],
     states={
         SELL_MENU: [
             CallbackQueryHandler(sell_menu, pattern="^" + str(SELL_MENU) + "$"),
@@ -215,11 +219,14 @@ sell_menu_conv_handler = ConversationHandler(
             token_sell_conv_handler,
         ],
     },
-    fallbacks=[CommandHandler(str(SELL_MENU), sell_menu)],
+    fallbacks=[CommandHandler("sell", sell_menu_new)],
 )
 
 withdraw_menu_conv_handler = ConversationHandler(
-    entry_points=[CallbackQueryHandler(withdraw_menu_new, pattern="^" + str(NEW_WITHDRAW_MENU) + "$")],
+    entry_points=[
+        CallbackQueryHandler(withdraw_menu_new, pattern="^" + str(NEW_WITHDRAW_MENU) + "$"),
+        CommandHandler("withdraw", withdraw_menu_new),
+    ],
     states={
         WITHDRAW_MENU: [
             CallbackQueryHandler(withdraw_menu, pattern="^" + str(WITHDRAW_MENU) + "$"),
@@ -237,5 +244,5 @@ withdraw_menu_conv_handler = ConversationHandler(
             withdraw_conv_handler,
         ],
     },
-    fallbacks=[CommandHandler(str(WITHDRAW_MENU), withdraw_menu)],
+    fallbacks=[CommandHandler("withdraw", withdraw_menu_new)],
 )

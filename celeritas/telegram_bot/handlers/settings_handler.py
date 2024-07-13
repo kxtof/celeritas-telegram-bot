@@ -98,11 +98,13 @@ async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE, new=False
     user_id = update.effective_user.id
     current_user_settings = user_db.get_user_settings(user_id)
     query = update.callback_query
-    await query.answer()
+    if query: await query.answer()
+    
     reply_markup = await generate_settings_keyboard(current_user_settings)
 
     if new:
-        message = await query.message.reply_text(
+        message_func = query.message.reply_text if query else update.message.reply_text
+        message = await message_func(
             text=settings_text(), reply_markup=reply_markup, parse_mode="HTML"
         )
     else:
@@ -273,7 +275,10 @@ async def chart_previews(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 # Conversation handler for settings
 settings_conv_handler = ConversationHandler(
-    entry_points=[CallbackQueryHandler(settings_new, pattern="^" + str(SETTINGS_NEW) + "$")],
+    entry_points=[
+        CallbackQueryHandler(settings_new, pattern="^" + str(SETTINGS_NEW) + "$"),
+        CommandHandler("settings", settings_new),
+    ],
     states={
         SETTINGS: [
             CallbackQueryHandler(settings, pattern="^" + str(SETTINGS) + "$"),
@@ -295,5 +300,5 @@ settings_conv_handler = ConversationHandler(
         CUSTOM_FEE: [MessageHandler(filters.TEXT & ~filters.COMMAND, custom_fee_input)],
         MIN_POS_VALUE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, min_pos_value_input)],
     },
-    fallbacks=[CommandHandler(str(SETTINGS), settings)],
+    fallbacks=[CommandHandler("settings", settings_new)],
 )

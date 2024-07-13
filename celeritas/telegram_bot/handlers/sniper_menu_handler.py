@@ -71,7 +71,8 @@ async def sniper_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, page=0
     user_id = update.effective_user.id
     user = user_db.get_user(user_id)
     query = update.callback_query
-    await query.answer()
+    if query: await query.answer()
+
     wallets, has_more = await get_paginated_wallets(user, page)
     reply_markup = await generate_menu_keyboard(user, wallets, page, last=has_more)
     wallets_texts = [await generate_wallet_text(user, w) for w in wallets]
@@ -83,7 +84,7 @@ async def sniper_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, page=0
         f"{''.join(wallets_texts) if len(wallets_texts) else '➕ Add a sniping setup to get started.\n\n'}"
         f"🕒 <i>{utc_time_now()}</i>"
     )
-    message_func = query.message.reply_text if new else query.edit_message_text
+    message_func = (query.message.reply_text if query else update.message.reply_text) if new else query.edit_message_text
     message = await message_func(
         text=text, reply_markup=reply_markup, parse_mode="HTML", disable_web_page_preview=True
     )
@@ -388,7 +389,10 @@ SNIPE_{wallet} - open a sniping setup for a certain wallet
 """
 
 sniper_menu_conv_handler = ConversationHandler(
-    entry_points=[CallbackQueryHandler(sniper_menu_new, pattern="^" + str(NEW_SNIPER_MENU) + "$")],
+    entry_points=[
+        CallbackQueryHandler(sniper_menu_new, pattern="^" + str(NEW_SNIPER_MENU) + "$"),
+        CommandHandler("sniper", sniper_menu_new),
+    ],
     states={
         SNIPER_MENU: [
             CallbackQueryHandler(sniper_menu, pattern="^" + str(SNIPER_MENU) + "$"),
@@ -425,5 +429,5 @@ sniper_menu_conv_handler = ConversationHandler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, custom_priority_fee_sniper_input)
         ],
     },
-    fallbacks=[CommandHandler(str(SNIPER_MENU), sniper_menu)],
+    fallbacks=[CommandHandler("sniper", sniper_menu_new)],
 )
