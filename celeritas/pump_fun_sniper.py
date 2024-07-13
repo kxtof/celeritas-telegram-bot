@@ -79,10 +79,8 @@ async def snipe_for_user(user, sniping_setup, mint, bonding_curve, associated_bo
     try:
         transact = Transact(user["wallet_secret"], fee_sol=sniping_setup["priority_fee"])
 
-        # Prepare snipe parameters
         output_amount = sniping_setup["amount"]
         min_sol_cost, max_sol_cost = sniping_setup["min_sol_cost"], sniping_setup["max_sol_cost"]
-
         # Execute the snipe
         quote = await transact.snipe_pump_fun(
             mint, output_amount, max_sol_cost, bonding_curve, associated_bonding_curve
@@ -100,7 +98,6 @@ async def snipe_for_user(user, sniping_setup, mint, bonding_curve, associated_bo
             # )
 
         if txs:
-            # Prepare success message
             text = (
                 f"🚀 <b>Snipe order for {nfpf(output_amount)} sent!</b>\n\n"
                 f'<b>Transaction details</b>:\n• <a href="https://solscan.io/tx/{txs}">View on Solscan</a>\n'
@@ -128,9 +125,8 @@ async def snipe_for_user(user, sniping_setup, mint, bonding_curve, associated_bo
                 user["wallet_public"],
             )
 
-            return f"Success for user {user['_id']}: {txs}"
+            return f"Success {user['_id']}: {txs}"
         else:
-            # Prepare failure message
             text = (
                 f"<b>Failed to execute snipe for {output_amount}!</b>\n"
                 "The transaction could not be sent. Please check your settings and try again."
@@ -139,10 +135,10 @@ async def snipe_for_user(user, sniping_setup, mint, bonding_curve, associated_bo
             # Send failure message to user
             await application.bot.send_message(chat_id=user["_id"], text=text, parse_mode="HTML")
 
-            return f"Failure for user {user['_id']}"
+            return f"Failure {user['_id']}"
 
     except Exception as e:
-        logger.error(f"Error in snipe_for_user: {str(e)}")
+        logger.error(f'Error in snipe_for_user() for user_id "{user['_id']}": {str(e)}')
         return f"Error sniping for user {user['_id']}: {str(e)}"
 
 
@@ -197,6 +193,7 @@ async def subscribe_blocks():
                 if "params" in data:
                     data = parse_block(data)
                     for mint, wallet, time_diff, bonding_curve, associated_bonding_curve in data:
+                        logger.info(f'Received mint "{mint}" with time delta of {time_diff:.2f}')
                         wallet = "EiKviBF8WYxqYEoS1QuyoNobs7qTr6GvYftUNzZhakeE"  # testing
                         if wallet not in watched_wallets:
                             continue
@@ -210,7 +207,7 @@ async def subscribe_blocks():
                     subscription_id = data["result"]
 
         except Exception as e:
-            logger.error("An exception has occurred:", e)
+            logger.error("An exception has occurred in subscribe_blocks():", e)
         finally:
             if subscription_id is not None:
                 unsubscribe_params = {

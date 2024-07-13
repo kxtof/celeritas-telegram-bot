@@ -34,6 +34,10 @@ class Config:
         return self.get("platform_fee_pubkey")
 
     @property
+    def admin_telegram_account_id(self):
+        return int(self.get("admin_telegram_account_id"))
+
+    @property
     def mongodb_url(self):
         url = self.get("mongodb_url")
         if url:

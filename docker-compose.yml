@@ -11,6 +11,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    restart: unless-stopped
 
   telegram_bot:
     build:
@@ -28,25 +29,29 @@ services:
       - SOLANA_RPC_URL
       - SOLANA_WS_URL
       - PLATFORM_FEE_PUBKEY
+      - ADMIN_TELEGRAM_ACCOUNT_ID
       - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
+    restart: unless-stopped
 
-#  pump_fun_sniper:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile_pump_fun_sniper
-#    container_name: celeritas_pump_fun_sniper
-#    network_mode: "host"
-#    command: python run_pump_fun_sniper.py
-#    volumes:
-#      - ./data:/app/data
-#    depends_on: 
-#      - mongodb
-#    environment:
-#      - TELEGRAM_BOT_TOKEN
-#      - SOLANA_RPC_URL
-#      - SOLANA_WS_URL
-#      - PLATFORM_FEE_PUBKEY
-#       - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
+  pump_fun_sniper:
+    build:
+      context: .
+      dockerfile: Dockerfile_pump_fun_sniper
+    container_name: celeritas_pump_fun_sniper
+    network_mode: "host"
+    command: python run_pump_fun_sniper.py
+    volumes:
+      - ./data:/app/data
+    depends_on: 
+      - mongodb
+    environment:
+      - TELEGRAM_BOT_TOKEN
+      - SOLANA_RPC_URL
+      - SOLANA_WS_URL
+      - PLATFORM_FEE_PUBKEY
+      - ADMIN_TELEGRAM_ACCOUNT_ID
+      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
+    restart: unless-stopped
 
 #volumes:
 #  mongo_data:

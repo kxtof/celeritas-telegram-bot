@@ -10,10 +10,12 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     ConversationHandler,
+    filters
 )
 from celeritas.db import user_db
 from celeritas.user import User
 from celeritas.config import config
+from celeritas.constants import LAMPORTS_PER_SOL
 from celeritas.telegram_bot.callbacks import *
 from celeritas.telegram_bot.utils import utc_time_now, sol_dollar_value
 from celeritas.telegram_bot.utils import nice_float_price_format as nfpf
@@ -261,6 +263,60 @@ async def close_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     return MAIN_MENU
 
 
+async def get_referral_payouts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Generates a CSV file with users eligible for referral payouts and their respective amounts.
+    """
+    users = user_db.users.find()
+    referral_payouts = []
+
+    for user in users:
+        available_fees = user["trading_fees_earned"] - user["trading_fees_paid_out"]
+        if available_fees >= 0.005:
+            referral_payouts.append(
+                {
+                    "user_id": user["_id"],
+                    "wallet": user["referral_wallet"],
+                    "amount": available_fees,
+                }
+            )
+            user_db.update_attribute(user["_id"], "trading_fees_paid_out", user["trading_fees_earned"])
+
+    # Update only the eligible users in bulk
+    user_db.users.update_many(
+        {"_id": {"$in": [payout['user_id'] for payout in referral_payouts]}},
+        [{"$set": {"trading_fees_paid_out": "$trading_fees_earned"}}]
+    )
+
+    # Generate CSV content
+    csv_content = "user,wallet,amount\n"
+    for payout in referral_payouts:
+        csv_content += f"{payout['user_id']},{payout['wallet']},{int(payout['amount']*LAMPORTS_PER_SOL)}\n"
+    
+    # Send the CSV file to the administrator
+    await context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=csv_content.encode('utf-8'),
+        filename="referral_payouts.csv",
+    )
+
+    logger.info(f"Referral payout CSV generated and sent to admin. ({update.effective_chat.id})")
+
+
+async def get_revenue_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    total_revenue = sum(user["revenue"] for user in user_db.users.find())
+    text = (
+        "<u><b>Total revenue earned</b></u>\n"
+        f"<code>{nfpf(total_revenue)} SOL (${nfpf(total_revenue*sol_dollar_value())})</code>"
+    )
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=text,
+        parse_mode="HTML"
+    )
+
+    logger.info(f"Revenue report sent to admin. ({update.effective_chat.id})")
+
 def main() -> None:
     """Run the bot."""
     application = (
@@ -293,6 +349,14 @@ def main() -> None:
         },
         fallbacks=[CommandHandler("start", start)],
     )
+    application.add_handler(settings_conv_handler)
+    application.add_handler(sell_menu_conv_handler)
+    application.add_handler(withdraw_menu_conv_handler)
+    application.add_handler(sniper_menu_conv_handler)
+
+    # Admin only
+    application.add_handler(CommandHandler("get_referral_payouts", get_referral_payouts, filters.User(user_id=config.admin_telegram_account_id)))
+    application.add_handler(CommandHandler("get_revenue_report", get_revenue_report, filters.User(user_id=config.admin_telegram_account_id)))
 
     application.add_handler(conv_handler)
     application.add_handler(token_buy_conv_handler)
