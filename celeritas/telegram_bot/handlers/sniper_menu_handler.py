@@ -26,7 +26,7 @@ WALLETS_PER_PAGE = 6
 
 async def generate_menu_keyboard(user, wallets, page, last) -> InlineKeyboardMarkup:
     def create_wallet_button(wallet) -> InlineKeyboardButton:
-        shortened_wallet = wallet["wallet"][:8] + "..." + wallet["wallet"][-4:] if wallet["wallet"] else "--"
+        shortened_wallet = wallet["wallet"][:8] + "..." + wallet["wallet"][-4:] if wallet["wallet"] else "Edit Me"
         return InlineKeyboardButton(shortened_wallet, callback_data=str(SNIPE) + f"_{wallet['wallet']}")
 
     wallet_buttons = [create_wallet_button(wallet) for wallet in wallets]

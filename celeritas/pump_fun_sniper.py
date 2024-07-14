@@ -2,8 +2,9 @@ import asyncio
 import json
 import logging
 import time
-
+import signal
 import websockets
+
 from aiolimiter import AsyncLimiter
 from solders.signature import Signature
 from telegram.ext import Application
@@ -164,8 +165,27 @@ async def snipe_concurrently(wallet, mint, bonding_curve, associated_bonding_cur
     return results
 
 
+async def unsubscribe():
+    logger.info("Starting unscibringinffdkjfodsjfojds")
+    if websocket_connection and subscription_id:
+        unsubscribe_params = {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "logsUnsubscribe",
+            "params": [subscription_id],
+        }
+        await websocket_connection.send(json.dumps(unsubscribe_params))
+        logger.info("Unsubscribed from logs")
+
+websocket_connection = None
+subscription_id = None
+
 async def subscribe_blocks():
+    global websocket_connection
+    global subscription_id
+
     async with websockets.connect(SOLANA_WS_URL) as websocket:
+        websocket_connection = websocket
         # Construct the subscription request payload
         params = {
             "jsonrpc": "2.0",
@@ -183,8 +203,6 @@ async def subscribe_blocks():
             ],
         }
         await websocket.send(json.dumps(params))
-
-        subscription_id = None
 
         try:
             while True:
@@ -208,32 +226,40 @@ async def subscribe_blocks():
 
         except Exception as e:
             logger.error("An exception has occurred in subscribe_blocks():", e)
-        finally:
-            if subscription_id is not None:
-                unsubscribe_params = {
-                    "jsonrpc": "2.0",
-                    "id": 2,
-                    "method": "logsUnsubscribe",
-                    "params": [subscription_id],
-                }
-                await websocket.send(json.dumps(unsubscribe_params))
-                logger.info("Unsubscribed from logs")
+
+
+async def shutdown(signal, loop):
+    """Cleanup tasks tied to the service's shutdown."""
+    logger.info(f"Received exit signal {signal.name}...")
+
+    await unsubscribe()
+    if websocket_connection:
+        await websocket_connection.close()
+
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+
+    [task.cancel() for task in tasks]
+
+    logger.info(f"Cancelling {len(tasks)} outstanding tasks")
+    await asyncio.gather(*tasks, return_exceptions=True)
+    loop.stop()
 
 
 async def main():
-    # Create an asyncio task to refresh the wallet cache periodically
+    loop = asyncio.get_running_loop()
+    signals = (signal.SIGTERM, signal.SIGINT)
+    for s in signals:
+        loop.add_signal_handler(
+            s, lambda s=s: asyncio.create_task(shutdown(s, loop))
+        )
+
     refresh_task = asyncio.create_task(refresh_wallet_cache())
+    
     try:
         await application._job_queue.start()
         await subscribe_blocks()
-    except asyncio.CancelledError:
-        logger.info("Subscription cancelled")
+    except: 
+        pass
     finally:
         refresh_task.cancel()  # Cancel the cache refresh task
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Interrupted by user")
+        logger.info("Shutdown complete.")

@@ -269,7 +269,7 @@ async def get_referral_payouts(update: Update, context: ContextTypes.DEFAULT_TYP
     """
     users = user_db.users.find()
     referral_payouts = []
-
+    
     for user in users:
         available_fees = user["trading_fees_earned"] - user["trading_fees_paid_out"]
         if available_fees >= 0.005:
@@ -283,10 +283,11 @@ async def get_referral_payouts(update: Update, context: ContextTypes.DEFAULT_TYP
             user_db.update_attribute(user["_id"], "trading_fees_paid_out", user["trading_fees_earned"])
 
     # Update only the eligible users in bulk
-    user_db.users.update_many(
-        {"_id": {"$in": [payout['user_id'] for payout in referral_payouts]}},
-        [{"$set": {"trading_fees_paid_out": "$trading_fees_earned"}}]
-    )
+    if context.args and context.args[0] == 'no_test':
+        user_db.users.update_many(
+            {"_id": {"$in": [payout['user_id'] for payout in referral_payouts]}},
+            [{"$set": {"trading_fees_paid_out": "$trading_fees_earned"}}]
+        )
 
     # Generate CSV content
     csv_content = "user,wallet,amount\n"
