@@ -27,6 +27,6 @@ description: >-
 * **Example:**
 * You set a slippage of 10%.
 * You want to sell a token for 1 SOL.
-* The bot will execute the order if the price is 0.9 SOL or higher.
+* The bot will execute the order if the price hasn't decreased by more than 10%.
 
 By adjusting your sell percentages and slippage settings, you can balance your desire for speed and price optimization. Remember, finding the right combination depends on your individual trading strategy and risk tolerance.
