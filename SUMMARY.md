@@ -1,24 +1,28 @@
 # Table of contents
 
-* [👋 Welcome to A Product](README.md)
+* [👋 Welcome to TurboTendies](README.md)
 
 ## Overview
 
-* [💡 What we do](overview/what-we-do.md)
-* [✨ Our Features](overview/our-features.md)
+* [💡 What is TurboTendies?](overview/what-is-turbotendies.md)
 
-## Product Guides
+## usage guide
 
-* [📪 Making a post](product-guides/making-a-post.md)
-* [📎 Understanding Projects](product-guides/understanding-projects.md)
+* [📪 Initialization](usage-guide/initialization.md)
+* [⚡ Deposit SOL](usage-guide/deposit-sol.md)
+* [⚙️ Settings](usage-guide/settings/README.md)
+  * [💹 Trading Fees](usage-guide/settings/trading-fees.md)
+  * [🛒 Buy settings](usage-guide/settings/buy-settings.md)
+  * [💰 Sell Settings](usage-guide/settings/sell-settings.md)
+  * [🔧 General Settings](usage-guide/settings/general-settings.md)
+  * [👛 Wallet Settings](usage-guide/settings/wallet-settings.md)
+* [🛒 Buy a Token](usage-guide/buy-a-token.md)
+* [💰 Sell Your Tokens](usage-guide/sell-your-tokens.md)
+* [🎯 Pump.fun Sniper](usage-guide/pump.fun-sniper.md)
+* [🌟 Referrals](usage-guide/referrals.md)
 
-## Fundamentals
+## useful features
 
-* [🛠️ Getting set up](fundamentals/getting-set-up/README.md)
-  * [📝 Setting permissions](fundamentals/getting-set-up/setting-permissions.md)
-  * [🧑 Inviting Members](fundamentals/getting-set-up/inviting-members.md)
-
-## Use Cases
-
-* [🎨 For Designers](use-cases/for-designers.md)
-* [🖥️ For Developers](use-cases/for-developers.md)
+* [📥 Token Withdrawal](useful-features/token-withdrawal.md)
+* [🤖 Auto buy](useful-features/auto-buy.md)
+* [🔥 Burn Your Tokens](useful-features/burn-your-tokens.md)
