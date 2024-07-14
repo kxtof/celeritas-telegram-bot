@@ -40,8 +40,8 @@ def wallet_settings_text(user):
         f'<code>{user.wallet_public}</code> (Tap me)\n\n'
         f'💡 <b>Options:</b>\n'
         f'• <b>Import:</b> Import a new wallet using its secret key.\n'
-        f"• <b>Export:</b> Download your current wallet's secret key. \n\n"
-        f'    <i>⚠️ <b>Please handle your secret key with utmost care!</b> Exporting your wallet removes its security guarantees.</i>\n\n'
+        f"• <b>Export:</b> Export your current wallet's secret key. \n\n"
+        f'    <i>⚠️ <b>Please handle your secret key with utmost care!</b> We can no longer guarantee your wallets securiti after it has been exported.</i>\n\n'
         f"🕒 <i>{utc_time_now()}</i>"
     )
 

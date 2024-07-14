@@ -68,9 +68,9 @@ def sell_settings_text():
         "Set predetermined sell percentages of your holdings.\n"
         "🔴 Low  |  🟡 Medium  |  🟢 High\n"
         "Allowed values: 1-100%\n\n"
-        "📉 <b>Sell Slippage:</b>\n"
-        "Set the maximum price difference you're willing to accept.\n"
-        "Higher slippage may result in faster execution but potentially worse prices.\n\n"
+        "📈 <b>Sell Slippage:</b>\n"
+        "Set the maximum price increase you're willing to accept. "
+        "Higher slippage increases the likelihood of order execution, but may lead to less favorable prices.\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
 

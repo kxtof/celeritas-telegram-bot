@@ -56,7 +56,7 @@ async def generate_start_message(user, new=False):
         f"<code>{user.wallet_public}</code> (Tap me)\n"
         f"Balance: <code>{balance_str}</code>\n\n"
         "Click 'Refresh' to update your balance.\n\n"
-        "Join our Telegram group for TurboTendies users: @to_be_determined_69420\n\n"
+        "Join our Telegram group for TurboTendies users: @turbo_tendies\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
 
@@ -199,7 +199,7 @@ async def help_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         "Share the love! Invite your friends and earn rewards for every trade they make.\n\n"
         "➡️ <u><b>Withdraw</b></u>\n"
         "Easily transfer your SOL or SPL tokens to any Solana wallet.\n\n"
-        "❓ <u><b>Need more help?</b></u> Join our Telegram group @to_be_determined_69420 for support and updates!\n\n"
+        "❓ <u><b>Need more help?</b></u> Join our Telegram group @turbo_tendies for support and updates!\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
 

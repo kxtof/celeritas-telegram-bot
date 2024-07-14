@@ -24,7 +24,7 @@ from celeritas.telegram_bot.utils import utc_time_now
 
 logger = logging.getLogger(__name__)
 
-FAST_FEE, LIGHTNING_FEE = 0.001, 0.008
+FAST_FEE, LIGHTNING_FEE = 0.0015, 0.008
 
 
 async def generate_settings_keyboard(user_settings) -> InlineKeyboardMarkup:

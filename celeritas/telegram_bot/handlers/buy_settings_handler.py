@@ -81,7 +81,7 @@ def buy_settings_text():
         "🟢 Smallest | 🔵 Small | 🟣 Medium | 🟠 Large | 🔴 Largest\n"
         "Click on a button to change the amount.\n\n"
         "📈 <b>Buy Slippage:</b>\n"
-        "Set the maximum price increase you're willing to accept.\n"
+        "Set the maximum price increase you're willing to accept. "
         "Higher slippage increases the likelihood of order execution, but may lead to less favorable prices.\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
