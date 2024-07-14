@@ -8,8 +8,8 @@
 
 ## Quick links
 
-{% content-ref url="overview/what-is-turbotendies.md" %}
-[what-is-turbotendies.md](overview/what-is-turbotendies.md)
+{% content-ref url="../overview/what-is-turbotendies.md" %}
+[what-is-turbotendies.md](../overview/what-is-turbotendies.md)
 {% endcontent-ref %}
 
 {% content-ref url="broken-reference" %}
