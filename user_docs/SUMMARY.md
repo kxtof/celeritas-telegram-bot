@@ -1,6 +1,6 @@
 # Table of contents
 
-* [👋 Welcome to TurboTendies](README.md)
+* [🍗 Welcome to TurboTendies](README.md)
 
 ## Overview
 
