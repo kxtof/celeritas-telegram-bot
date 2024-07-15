@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurboTendies - Solana's Best Telegram Trading Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">    
+    <link rel="apple-touch-icon" sizes="180x180" href="./favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicons/favicon-16x16.png">
+    <link rel="manifest" href="./favicons/site.webmanifest">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f8f9fa;
+            --background-color: #181818;
+            --text-color: #ffffff;
+            --section-bg-color: #222222;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Computer Modern Serif', serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        nav a {
+            margin-left: 20px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--primary-color);
+        }
+
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 50px 0;
+        }
+
+        .hero-text {
+            flex: 1;
+        }
+
+        .hero-image {
+            flex: 1;
+            text-align: right;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: inline-block;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            margin-right: 15px;
+        }
+
+        .smallbtn {
+            padding: 6px 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            display: block;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            width: auto;
+            text-align: center;
+        }
+
+        .primary-btn {
+            background-color: #6c757d; /* Grey color */
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background-color: #5a6268;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .secondary-btn {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .secondary-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 50px 0;
+        }
+
+        .feature {
+            flex-basis: calc(33.333% - 20px);
+            background-color: var(--section-bg-color);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .why-section {
+            text-align: center;
+            margin: 50px 0;
+            padding: 50px 20px;
+            background-color: var(--section-bg-color);
+        }
+
+        .why-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 30px;
+        }
+
+        .why-item {
+            flex-basis: calc(50% - 20px);
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        footer {
+            text-align: center;
+            padding: 5px 0;
+            background-color: var(--section-bg-color);
+            margin-top: 20px;
+        }
+
+        footer p {
+            margin: 4px 0;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .hero-image {
+                margin-top: 30px;
+                text-align: center;
+            }
+
+            .hero-image img {
+                display: inline-block;
+                max-width: 75%;
+                height: auto;
+            }
+
+            .feature {
+                flex-basis: 100%;
+            }
+
+            .why-item {
+                flex-basis: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">TurboTendies</div>
+            <nav>
+                <a href="https://docs.turbotendies.com">Documentation</a>
+                <a href="https://t.me/turbotendiesbot">Trade</a>
+                <a href="https://x.com/TurboTendies">Twitter</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div class="hero-text">
+                    <h1>TurboTendies</h1>
+                    <p>Your fastest and easiest way to trade on Solana, right from your Telegram.</p>
+                    <a href="https://t.me/turbotendiesbot" class="btn primary-btn">Start Trading</a>
+                    <a href="https://docs.turbotendies.com" class="btn secondary-btn">Learn More</a>
+                </div>
+                <div class="hero-image">
+                    <img src="./logo.png" alt="TurboTendies Logo">
+                </div>
+            </section>
+
+            <section id="features" class="features">
+                <div class="feature">
+                    <h3>Pump.fun Sniper 💊🎯</h3>
+                    <p>Snipe new Pump.fun tokens with lightning speed! Set up automatic purchases and let TurboTendies do the heavy lifting. <a href="https://t.me/turbotendiesbot" class="smallbtn primary-btn">Try it Now</a></p>
+                </div>
+                <div class="feature">
+                    <h3>Auto Buy 🤖</h3>
+                    <p>Buy tokens automatically by simply sending their mint address! Set your preferences and let TurboTendies do the rest. <a href="https://docs.turbotendies.com/usage-guide/settings/general-settings.md" class="smallbtn secondary-btn">Learn More</a></p>
+                </div>
+                <div class="feature">
+                    <h3>Referrals 🤝</h3>
+                    <p>Earn 30% of your friends' trading fees! Build a network and unlock rewards up to 5 levels deep. <a href="https://docs.turbotendies.com/usage-guide/referrals.md" class="smallbtn secondary-btn">Join the Program</a></p>
+                </div>
+            </section>
+
+            <section class="why-section">
+                <h2>Why Choose TurboTendies?</h2>
+                <div class="why-content">
+                    <div class="why-item">
+                        <h3>Blazing Fast Trades 🚀</h3>
+                        <p>Experience lightning-fast trade execution, making TurboTendies the fastest way to trade on Solana.</p>
+                    </div>
+                    <div class="why-item">
+                        <h3>Simple & Easy to Use 🕹️</h3>
+                        <p>Trade Solana tokens effortlessly with our intuitive and user-friendly Telegram bot.</p>
+                    </div>
+                    <div class="why-item">
+                        <h3>Trade with Confidence 🔒</h3>
+                        <p>Enjoy secure trading with customizable slippage settings, transaction fees, and optional MEV protection.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 TurboTendies. All Rights Reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>
