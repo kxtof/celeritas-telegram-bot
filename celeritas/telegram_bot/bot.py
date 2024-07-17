@@ -109,6 +109,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                 pass
         user_db.add_user(user)
         new = True
+        # Inform admin about new user
+        await context.bot.send_message(
+            config.admin_telegram_account_id,
+            f"<u><b>New user detected</b></u>\n<code>{user.id}</code>\n<code>{user.name}</code>\n<code>{user.full_name}</code>",
+            parse_mode='HTML'
+        )
     else:
         user = user_db.get_user(user_id)
 
@@ -280,7 +286,6 @@ async def get_referral_payouts(update: Update, context: ContextTypes.DEFAULT_TYP
                     "amount": available_fees,
                 }
             )
-            user_db.update_attribute(user["_id"], "trading_fees_paid_out", user["trading_fees_earned"])
 
     # Update only the eligible users in bulk
     if context.args and context.args[0] == 'no_test':
@@ -290,9 +295,9 @@ async def get_referral_payouts(update: Update, context: ContextTypes.DEFAULT_TYP
         )
 
     # Generate CSV content
-    csv_content = "user,wallet,amount\n"
+    csv_content = "user,wallet,lamports,sol\n"
     for payout in referral_payouts:
-        csv_content += f"{payout['user_id']},{payout['wallet']},{int(payout['amount']*LAMPORTS_PER_SOL)}\n"
+        csv_content += f"{payout['user_id']},{payout['wallet']},{int(payout['amount']*LAMPORTS_PER_SOL)},{payout['amount']}\n"
     
     # Send the CSV file to the administrator
     await context.bot.send_document(

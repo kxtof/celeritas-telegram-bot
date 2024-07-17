@@ -12,7 +12,8 @@ users = [
         referrer=1,
         trading_fees_earned=1.5,
         trading_fees_paid_out=0.95,
-        revenue=0.24
+        revenue=0.24,
+        sol_in_wallet=1.34,
     ), 
 #    User(
 #        id=1564617170, # kxtof

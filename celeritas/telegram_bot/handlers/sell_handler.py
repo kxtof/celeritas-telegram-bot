@@ -53,11 +53,11 @@ async def generate_token_sell_keyboard(user, token, options) -> InlineKeyboardMa
         # [InlineKeyboardButton("--- Slippage to use ---", callback_data="none")],
         [
             InlineKeyboardButton(
-                f"{'🔵 ' if base_slippage == slippage else ''}{base_slippage}%",
+                f"{'🔵 ' if base_slippage == slippage else ''}{base_slippage}% Slippage",
                 callback_data=f"{SET_BASE_SLIPPAGE}_{base_slippage}",
             ),
             InlineKeyboardButton(
-                f"🔵 {slippage}%" if slippage != base_slippage else "Custom % ✏️",
+                f"🔵 {slippage}% Slippage" if slippage != base_slippage else "X % Slippage ✏️",
                 callback_data=str(SET_CUSTOM_SLIPPAGE),
             ),
         ],

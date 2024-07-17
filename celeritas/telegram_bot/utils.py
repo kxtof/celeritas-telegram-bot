@@ -68,7 +68,7 @@ def sol_dollar_value():
 def nice_float_price_format(price: float, underline=False) -> str:
     before_d, after_d = format(price, ".20f").split(".")
     zeros_after_d = len(after_d) - len(after_d.lstrip("0"))
-    if price == 0:
+    if abs(price) < 1e-12:
         return "0"
     elif price >= 1_000_000_000_000:
         price = f"{price / 1_000_000_000_000:.2f}"

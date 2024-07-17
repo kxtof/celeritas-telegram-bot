@@ -122,7 +122,7 @@ async def generate_withdraw_text(user, options):
     return (
         f"<b>Withdraw {t_symbol}</b> - {t_name} "
         f'<a href="{token_link}">🔗</a>\n\n'
-        f"💰 Balance: <code>{nfpf(user.holdings[t_mint])} {t_symbol}</code>\n"
+        f"💰 Balance: <code>{nfpf(user.holdings.get(t_mint, 0))} {t_symbol}</code>\n"
         f"💵 Price: <code>${nfpf(token['price_dollars'])}</code>\n\n"
         f"🔢 Amount to withdraw:\n"
         f"<code>{nfpf(options['percentage_to_withdraw']/100 * user.holdings[t_mint])} {t_symbol}</code>\n\n"
@@ -373,13 +373,19 @@ async def process_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE, d
     if delete:
         await query.message.delete()
 
+    # Handle 100% sol withdrawals
+    withdrawal_amount = min(
+        user.sol_in_wallet * options["percentage_to_withdraw"]/100 - 0.000005, # fee associated with a sol withdrawal
+        user.sol_in_wallet * options["percentage_to_withdraw"]/100
+    ) if mint == "SOL" else (
+        user.holdings[mint] * options["percentage_to_withdraw"] / 100
+    )
+
     txs = await send_withdrawal(
         user.wallet_secret,
         options["wallet"],
         options["mint"],
-        options["percentage_to_withdraw"]
-        / 100
-        * (user.sol_in_wallet if mint == "SOL" else user.holdings[mint]),
+        (withdrawal_amount),
     )
 
     if txs:
@@ -425,8 +431,8 @@ async def send_withdrawal(sender_secret, receiver, mint, amount):
 
 async def sol_withdrawal_ixs(keypair, receiver, amount):
     return [
-        set_compute_unit_limit(1000),
-        set_compute_unit_price(4_000_000),
+        #set_compute_unit_limit(1000),
+        #set_compute_unit_price(4_000_000),
         transfer(
             TransferParams(
                 from_pubkey=keypair.pubkey(),

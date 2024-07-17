@@ -41,6 +41,8 @@ from celeritas.transact_utils import make_pump_fun_snipe_instruction
 from celeritas.transact_utils import make_swap_instruction
 from celeritas.transact_utils import TOKEN_PROGRAM_ID
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Transact:
     """
@@ -450,7 +452,7 @@ class Transact:
                 (percentage / 100) * a.account.data.parsed["info"]["tokenAmount"]["uiAmount"],
                 slippage_bps=slippage_bps,
             )
-            if percentage == 100:
+            if percentage == 100 and a.account.data.parsed["info"]["tokenAmount"]["uiAmount"] < 1e8: # hot fix for inprecisions
                 quote["instructions"].append(self._close_account_ix(a.pubkey))
             return quote
         return None
