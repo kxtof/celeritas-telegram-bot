@@ -1,6 +1,9 @@
 # Use the official Python 3.12.3 image as a base
 FROM python:3.12.3-slim
 
+# Install openssl
+RUN apt-get update && apt-get install -y openssl
+
 # Set the working directory in the container
 WORKDIR /app
 
@@ -14,6 +17,11 @@ COPY run_telegram_bot.py .
 
 # Create a directory for persistent cache data
 RUN mkdir -p /app/data
+
+# Generate ssl run and 
+#RUN openssl req -newkey rsa:2048 -sha256 -noenc -keyout private.key -x509 -days 3650 -out cert.pem -subj "/C=US/ST=State/L=City/O=Organization/CN=https://7946-77-236-206-207.ngrok-free.app"
+COPY private.key .
+COPY cert.pem .
 
 # Run the application
 CMD ["python", "run_telegram_bot.py"]

@@ -31,6 +31,8 @@ services:
       - PLATFORM_FEE_PUBKEY
       - ADMIN_TELEGRAM_ACCOUNT_ID
       - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
+      - WEBHOOK_URL
+      - WEBHOOK_PORT
     restart: unless-stopped
 
 #  pump_fun_sniper:

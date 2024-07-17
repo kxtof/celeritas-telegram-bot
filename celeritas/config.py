@@ -38,6 +38,14 @@ class Config:
         return int(self.get("admin_telegram_account_id"))
 
     @property
+    def webhook_url(self):
+        return self.get("webhook_url")
+
+    @property
+    def webhook_port(self):
+        return self.get("webhook_port")
+
+    @property
     def mongodb_url(self):
         url = self.get("mongodb_url")
         if url:
