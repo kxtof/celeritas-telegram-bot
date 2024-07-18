@@ -494,10 +494,10 @@ class TokenDB:
 
 
 class TransactionDB:
-    def __init__(self, host: str = config.mongodb_url):
+    def __init__(self, host: str = config.mongodb_url, expireAfterSeconds=180):
         self.client = pymongo.MongoClient(host)
         self.transactions = self.client["celeritas"]["transactions"]
-        self.transactions.create_index([("timestamp", pymongo.ASCENDING)], expireAfterSeconds=180)
+        self.transactions.create_index([("timestamp", pymongo.ASCENDING)], expireAfterSeconds=expireAfterSeconds)
 
     async def insert_transaction(self, user_id: int, message_id: int, tx_signature: str, mint: str, timestamp: float):
         """Inserts a new transaction into the database."""
