@@ -17,6 +17,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile_telegram_bot
+      args:
+        - WEBHOOK_URL=${WEBHOOK_URL}
     container_name: celeritas_telegram_bot
     volumes:
       - ./data:/app/data

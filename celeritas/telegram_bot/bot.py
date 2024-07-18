@@ -366,14 +366,15 @@ def main() -> None:
 
     application.add_handler(conv_handler)
     application.add_handler(token_buy_conv_handler)
-    #application.run_polling(allowed_updates=Update.ALL_TYPES)
-    
+
+    #application.run_polling(allowed_updates=Update.ALL_TYPES)   
+
     application.run_webhook(
         listen="0.0.0.0",
-        port=config.webhook_port,
+        port=int(config.webhook_port),
         secret_token="somethingverysecretyoucouldnotguessevenIfyoutrYed",
         key='private.key',
         cert='cert.pem',
         url_path=config.telegram_bot_token,
-        webhook_url=f"{config.webhook_url}/{config.telegram_bot_token}"
+        webhook_url=f"https://{config.webhook_url}:{config.webhook_port}/{config.telegram_bot_token}"
     )
