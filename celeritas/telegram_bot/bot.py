@@ -39,12 +39,13 @@ async def generate_start_message(user, new=False):
     message_text = (
         (
             f"<i>Welcome {user.full_name} to the TurboTendies bot!\n"
-            "Your powerful trading companion on Solana.</i>\n\n"
+            "Fund your account by sending SOL to the wallet below.</i>\n\n"
         )   
         if new
         else ""
     )
     balance = user.sol_in_wallet
+    logger.info(balance)
     balance_str = (
         f"0 SOL ($0.00)"
         if balance == 0
@@ -53,10 +54,12 @@ async def generate_start_message(user, new=False):
 
     message_text += (
         f'<b>Wallet</b> · <a href="https://solscan.io/account/{user.wallet_public}">🌐</a>\n'
-        f"<code>{user.wallet_public}</code> (Tap me)\n"
-        f"Balance: <code>{balance_str}</code>\n\n"
-        "Click 'Refresh' to update your balance.\n\n"
-        "Join our Telegram group for TurboTendies users: @turbo_tendies\n\n"
+        f"<code>{user.wallet_public}</code> (Tap me)\n\n"
+        f"<b>Balance</b>: <code>{balance_str}</code>"
+        f"<i>{"\nFund me 🥺👉👈" if balance == 0 else ""}</i>"
+        "\n\nClick '<i>Refresh</i>' to update your balance.\n\n"
+        "ℹ️ <b>TurboTendies is in a public beta</b>\n"
+        "Please join us @turbo_tendies to report any bugs (and get a prize? 🤔😉) or ask questions.\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )
 
@@ -369,14 +372,16 @@ def main() -> None:
     application.add_handler(conv_handler)
     application.add_handler(token_buy_conv_handler)
 
-    #application.run_polling(allowed_updates=Update.ALL_TYPES)   
-
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=int(config.webhook_port),
-        secret_token="somethingverysecretyoucouldnotguessevenIfyoutrYed",
-        key='private.key',
-        cert='cert.pem',
-        url_path=config.telegram_bot_token,
-        webhook_url=f"https://{config.webhook_url}:{config.webhook_port}/{config.telegram_bot_token}"
-    )
+    # Development mode
+    if not config.webhook_url:
+        application.run_polling(allowed_updates=Update.ALL_TYPES)   
+    else:
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=int(config.webhook_port),
+            secret_token="somethingverysecretyoucouldnotguessevenIfyoutrYed",
+            key='private.key',
+            cert='cert.pem',
+            url_path=config.telegram_bot_token,
+            webhook_url=f"https://{config.webhook_url}:{config.webhook_port}/{config.telegram_bot_token}"
+        )
