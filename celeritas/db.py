@@ -493,5 +493,34 @@ class TokenDB:
             return await self.update_pump_fun_token(mint, token=token)
 
 
+class TransactionDB:
+    def __init__(self, host: str = config.mongodb_url):
+        self.client = pymongo.MongoClient(host)
+        self.transactions = self.client["celeritas"]["transactions"]
+        self.transactions.create_index([("timestamp", pymongo.ASCENDING)], expireAfterSeconds=180)
+
+    async def insert_transaction(self, user_id: int, message_id: int, tx_signature: str, mint: str, timestamp: float):
+        """Inserts a new transaction into the database."""
+        self.transactions.insert_one(
+            {
+                "user_id": user_id,
+                "message_id": message_id,
+                "tx_signature": tx_signature,
+                "mint": mint,
+                "timestamp": timestamp
+            }
+        )
+
+    async def fetch_transaction(self, tx_signature: Signature) -> dict:
+        """Fetches a transaction from the database."""
+        transaction = self.transactions.find_one({"tx_signature": tx_signature})
+        return transaction
+
+    async def delete_transaction(self, tx_signature: Signature):
+        """Deletes a transaction from the database."""
+        self.transactions.delete_one({"tx_signature": tx_signature})
+
+
 user_db = UserDB()
 token_db = TokenDB()
+transaction_db = TransactionDB()
