@@ -101,6 +101,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         if context.args and len(context.args) > 0:
             try:
                 referrer_id = int(context.args[0])
+                logger.info(f"should not be here {referrer_id}")
                 if user_db.user_exists(referrer_id):
                     user.referrer = referrer_id
                     n = user_db.get_attribute(referrer_id, "users_referred") + 1
@@ -289,6 +290,7 @@ async def get_referral_payouts(update: Update, context: ContextTypes.DEFAULT_TYP
 
     # Update only the eligible users in bulk
     if context.args and context.args[0] == 'no_test':
+        logger.info(f"Referral amounts updated for users. ({update.effective_chat.id})")
         user_db.users.update_many(
             {"_id": {"$in": [payout['user_id'] for payout in referral_payouts]}},
             [{"$set": {"trading_fees_paid_out": "$trading_fees_earned"}}]
@@ -297,7 +299,7 @@ async def get_referral_payouts(update: Update, context: ContextTypes.DEFAULT_TYP
     # Generate CSV content
     csv_content = "user,wallet,lamports,sol\n"
     for payout in referral_payouts:
-        csv_content += f"{payout['user_id']},{payout['wallet']},{int(payout['amount']*LAMPORTS_PER_SOL)},{payout['amount']}\n"
+        csv_content += f"{payout['user_id']},{payout['referral_wallet']},{int(payout['amount']*LAMPORTS_PER_SOL)},{payout['amount']}\n"
     
     # Send the CSV file to the administrator
     await context.bot.send_document(
