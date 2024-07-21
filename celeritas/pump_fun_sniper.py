@@ -166,7 +166,6 @@ async def snipe_concurrently(wallet, mint, bonding_curve, associated_bonding_cur
 
 
 async def unsubscribe():
-    logger.info("Starting unscibringinffdkjfodsjfojds")
     if websocket_connection and subscription_id:
         unsubscribe_params = {
             "jsonrpc": "2.0",

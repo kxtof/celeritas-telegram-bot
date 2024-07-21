@@ -499,11 +499,12 @@ class TransactionDB:
         self.transactions = self.client["celeritas"]["transactions"]
         self.transactions.create_index([("timestamp", pymongo.ASCENDING)], expireAfterSeconds=expireAfterSeconds)
 
-    async def insert_transaction(self, user_id: int, message_id: int, tx_signature: str, mint: str, timestamp: float):
+    async def insert_transaction(self, user_id: int, user_wallet: str, message_id: int, tx_signature: str, mint: str, timestamp: float):
         """Inserts a new transaction into the database."""
         self.transactions.insert_one(
             {
                 "user_id": user_id,
+                "user_wallet": user_wallet,
                 "message_id": message_id,
                 "tx_signature": tx_signature,
                 "mint": mint,
@@ -511,12 +512,12 @@ class TransactionDB:
             }
         )
 
-    async def fetch_transaction(self, tx_signature: Signature) -> dict:
+    async def fetch_transaction(self, tx_signature: str) -> dict:
         """Fetches a transaction from the database."""
         transaction = self.transactions.find_one({"tx_signature": tx_signature})
         return transaction
 
-    async def delete_transaction(self, tx_signature: Signature):
+    async def delete_transaction(self, tx_signature: str):
         """Deletes a transaction from the database."""
         self.transactions.delete_one({"tx_signature": tx_signature})
 

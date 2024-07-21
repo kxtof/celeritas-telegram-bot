@@ -1,3 +1,5 @@
+import time
+
 from solders.pubkey import Pubkey
 from spl.token.constants import TOKEN_PROGRAM_ID
 from telegram import InlineKeyboardButton
@@ -13,6 +15,7 @@ from telegram.ext import MessageHandler
 from celeritas.constants import aclient
 from celeritas.db import token_db
 from celeritas.db import user_db
+from celeritas.db import transaction_db
 from celeritas.telegram_bot.callbacks import *
 from celeritas.telegram_bot.fetch_tx_update_msg import schedule_tx_update
 from celeritas.telegram_bot.utils import center_arrow
@@ -342,17 +345,16 @@ async def execute_buy_order(
 ):
     transact = Transact(user.wallet_secret, fee_sol=user.settings.priority_fee)
     quote = await transact.buy(mint, amount, slippage_bps=int(slippage * 100))
-    # txs = Signature.from_string("66T2yoUUf1QXeYbyULmyZHb8c4EpX9EqU7ukMMzNsFXhN3c6MLD1QA5B3Sh6XjYh4jX99FYG4PvKhGikpsyi2DML")
+    #txs = "66T2yoUUf1QXeYbyULmyZHb8c4EpX9EqU7ukMMzNsFXhN3c6MLD1QA5B3Sh6XjYh4jX99FYG4PvKhGikpsyi2DML"
     txs = await transact.construct_and_send(
         quote, fee=(0.9 if user.referrer else 1) * amount * 0.01  # add transaction fee
     )
     text = (
         (
-            f"🚀 <b>Your buy order for {amount} SOL has been sent!</b>\n\n"
-            f"🕵️‍♂️ Want to follow the progress? Check out the transaction here:\n"
-            f'<a href="https://solscan.io/tx/{txs}">Solscan</a>\n'
-            f"📈 Slippage used: <b>{slippage}%</b>\n\n"
-            f"⏳  <i>We're waiting for confirmation to hit your wallet...</i>"
+            f"🚀 <b>Buy order for {amount} SOL sent!</b>\n\n"
+            f'Transaction details: <a href="https://solscan.io/tx/{txs}">View on Solscan</a>\n'
+            f"Slippage: <b>{slippage}%</b>\n\n"
+            f"⏳ <i>Waiting for Tx Confirmation...</i>"
         )
         if txs
         else (
@@ -367,9 +369,10 @@ async def execute_buy_order(
             chat_id=user.id, text=text, parse_mode="HTML", disable_web_page_preview=True
         )
     if txs:
-        await schedule_tx_update(
-            context, message.chat_id, message.message_id, user.id, txs, mint, user.wallet_public
-        )
+        await transaction_db.insert_transaction(user.id, user.wallet_public, message.message_id, str(txs), mint, int(time.time()))
+#        await schedule_tx_update(
+#            context, message.chat_id, message.message_id, user.id, txs, mint, user.wallet_public
+#        )
     return txs
 
 

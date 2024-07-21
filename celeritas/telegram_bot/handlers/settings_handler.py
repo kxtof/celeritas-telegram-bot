@@ -163,7 +163,7 @@ async def custom_fee_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     chat_id = update.effective_chat.id
     try:
         fee_size = float(update.message.text)
-        fee_size = max(0.0004, fee_size)
+        fee_size = max(0.0000004, fee_size)
         current_user_settings = user_db.update_user_settings(user_id, "priority_fee", fee_size)
         reply_markup = await generate_settings_keyboard(current_user_settings)
         # Delete the message where the user entered their custom fee

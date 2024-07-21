@@ -37,6 +37,28 @@ services:
       - WEBHOOK_PORT
     restart: unless-stopped
 
+  tx_listener:
+    build:
+      context: .
+      dockerfile: Dockerfile_tx_listener
+      args:
+        - WEBHOOK_URL=${WEBHOOK_URL}
+    container_name: celeritas_tx_listener
+    volumes:
+      - ./data:/app/data
+    network_mode: "host"
+    command: python run_tx_listener.py
+    depends_on: 
+      - mongodb
+    environment:
+      - TELEGRAM_BOT_TOKEN
+      - SOLANA_RPC_URL
+      - SOLANA_WS_URL
+      - PLATFORM_FEE_PUBKEY
+      - ADMIN_TELEGRAM_ACCOUNT_ID
+      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
+    restart: unless-stopped
+
 #  pump_fun_sniper:
 #    build:
 #      context: .

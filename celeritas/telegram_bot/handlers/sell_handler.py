@@ -1,4 +1,5 @@
 import logging
+import time
 
 from telegram import InlineKeyboardButton
 from telegram import InlineKeyboardMarkup
@@ -12,6 +13,7 @@ from telegram.ext import MessageHandler
 
 from celeritas.db import token_db
 from celeritas.db import user_db
+from celeritas.db import transaction_db
 from celeritas.telegram_bot.callbacks import *
 from celeritas.telegram_bot.fetch_tx_update_msg import schedule_tx_update
 from celeritas.telegram_bot.utils import center_arrow
@@ -382,7 +384,7 @@ async def process_sell(update: Update, context: ContextTypes.DEFAULT_TYPE, delet
             f"🚀 <b>Sell order for {options['percentage_to_sell']}% sent!</b>\n\n"
             f'Transaction details: <a href="https://solscan.io/tx/{txs}">View on Solscan</a>\n'
             f"Slippage: <b>{options['slippage']}%</b>\n\n"
-            f"<i>Waiting for Tx Confirmation...</i>"
+            f"⏳ <i>Waiting for Tx Confirmation...</i>"
         )
         if txs
         else (
@@ -393,9 +395,10 @@ async def process_sell(update: Update, context: ContextTypes.DEFAULT_TYPE, delet
 
     await message.edit_text(text=text, parse_mode="HTML", disable_web_page_preview=True)
     if txs:
-        await schedule_tx_update(
-            context, message.chat_id, message.message_id, user_id, txs, mint, user.wallet_public
-        )
+        await transaction_db.insert_transaction(user.id, user.wallet_public, message.message_id, str(txs), mint, int(time.time()))
+        #await schedule_tx_update(
+        #    context, message.chat_id, message.message_id, user_id, txs, mint, user.wallet_public
+        #)
 
     return SELL_TOKEN
 

@@ -45,7 +45,6 @@ async def generate_start_message(user, new=False):
         else ""
     )
     balance = user.sol_in_wallet
-    logger.info(balance)
     balance_str = (
         f"0 SOL ($0.00)"
         if balance == 0
