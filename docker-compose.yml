@@ -32,6 +32,7 @@ services:
       - SOLANA_WS_URL
       - PLATFORM_FEE_PUBKEY
       - ADMIN_TELEGRAM_ACCOUNT_ID
+      - MAX_REQUESTS_PER_SECOND
       - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
       - WEBHOOK_URL
       - WEBHOOK_PORT
@@ -56,6 +57,7 @@ services:
       - SOLANA_WS_URL
       - PLATFORM_FEE_PUBKEY
       - ADMIN_TELEGRAM_ACCOUNT_ID
+      - MAX_REQUESTS_PER_SECOND
       - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
     restart: unless-stopped
 
@@ -76,6 +78,7 @@ services:
 #      - SOLANA_WS_URL
 #      - PLATFORM_FEE_PUBKEY
 #      - ADMIN_TELEGRAM_ACCOUNT_ID
+#      - MAX_REQUESTS_PER_SECOND
 #      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
 #    restart: unless-stopped
 

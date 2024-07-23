@@ -30,6 +30,10 @@ class Config:
         return self.get("solana_ws_url")
 
     @property
+    def max_requests_per_second(self):
+        return int(self.get("max_requests_per_second"))
+
+    @property
     def platform_fee_pubkey(self):
         return self.get("platform_fee_pubkey")
 

@@ -439,7 +439,7 @@ class Transact:
         """
         percentage = max(1, percentage)
         percentage = min(100, percentage)
-        q = client.get_token_accounts_by_owner_json_parsed(
+        q = await aclient.get_token_accounts_by_owner_json_parsed(
             self.keypair.pubkey(),
             TokenAccountOpts(program_id=Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")),
         )

@@ -1,8 +1,10 @@
 import time
-from typing import List, Dict
-
+import asyncio
 import aiohttp
 import pymongo
+
+from typing import List, Dict
+
 from solana.rpc.types import TokenAccountOpts
 from solders.pubkey import Pubkey
 
@@ -299,13 +301,18 @@ class TokenDB:
         return tokens
 
     async def add_tokens(self, mints: List[str]) -> Dict[str, dict]:
+        async def add_single_token(mint: str):
+            logger.info(f"Adding {mint}")
+            return await self.add_token(mint, update_price=False)
+
         new_tokens = {}
-        for mint in mints:
-            logger.info(f"adding {mint}")
-            token = await self.add_token(mint, update_price=False)
+        tasks = [add_single_token(mint) for mint in mints]
+        results = await asyncio.gather(*tasks)
+
+        for mint, token in zip(mints, results):
             new_tokens[mint] = token
         
-        await self.update_price(list(new_tokens.keys()))        
+        await self.update_price(list(new_tokens.keys()))
         return new_tokens
 
     async def get_token_decimals(self, mint: str) -> int:
