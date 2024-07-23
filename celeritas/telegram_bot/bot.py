@@ -53,11 +53,11 @@ async def generate_start_message(user, new=False):
 
     message_text += (
         f'<b>Wallet</b> · <a href="https://solscan.io/account/{user.wallet_public}">🌐</a>\n'
-        f"<code>{user.wallet_public}</code> (Tap me)\n\n"
+        f"<code>{user.wallet_public}</code> (Tap me)\n"
         f"<b>Balance</b>: <code>{balance_str}</code>"
         f"<i>{"\nFund me 🥺👉👈" if balance == 0 else ""}</i>"
         "\n\nClick '<i>Refresh</i>' to update your balance.\n\n"
-        "ℹ️ <b>TurboTendies is in a public beta</b>\n"
+        "ℹ️ <b>TurboTendies is in public beta</b>\n"
         "Please join us @turbo_tendies to report any bugs (and get a prize? 🤔😉) or ask questions.\n\n"
         f"🕒 <i>{utc_time_now()}</i>"
     )

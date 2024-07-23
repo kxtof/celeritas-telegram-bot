@@ -37,7 +37,7 @@ async def generate_menu_keyboard(user, tokens, page, last, action_type) -> Inlin
     nav_buttons = []
     if page > 0:
         nav_buttons.append(InlineKeyboardButton("Previous", callback_data=str(PREV_PAGE)))
-    if last:
+    if not last:
         nav_buttons.append(InlineKeyboardButton("Next", callback_data=str(NEXT_PAGE)))
     if nav_buttons:
         keyboard.append(nav_buttons)
@@ -64,7 +64,7 @@ async def get_paginated_tokens(user, page, tokens_per_page, action_type):
     if action_type == "withdraw":
         tokens_by_value.insert(0, "SOL")
     start, end = page * tokens_per_page, (page + 1) * tokens_per_page
-    return tokens_by_value[start:end], len(tokens_by_value) > end
+    return tokens_by_value[start:end], len(tokens_by_value) <= end
 
 
 async def generate_token_text(user, token, token_info, sol=True):
@@ -103,10 +103,10 @@ async def token_menu(
     query = update.callback_query
     if query: await query.answer()
 
-    tokens, has_more = await get_paginated_tokens(user, page, TOKENS_PER_PAGE, action_type)
+    tokens, last = await get_paginated_tokens(user, page, TOKENS_PER_PAGE, action_type)
     tokens_info = await get_tokens(tokens)
     reply_markup = await generate_menu_keyboard(
-        user, tokens_info, page, last=has_more, action_type=action_type
+        user, tokens_info, page, last=last, action_type=action_type
     )
     token_texts = [await generate_token_text(user, t, tokens_info[t]) for t in tokens]
 

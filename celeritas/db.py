@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import List, Dict
 
 import aiohttp
 import pymongo
@@ -19,6 +19,11 @@ from celeritas.transact_utils import get_quote_info_from_pool
 from celeritas.user import User
 from celeritas.user_settings import User_settings
 
+
+import logging
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
 
 class UserDB:
     def __init__(self, host: str = config.mongodb_url):
@@ -223,16 +228,16 @@ class TokenDB:
             "bonding_curve_price_sol": None,  # pump.fun prices natively in SOL
             "bonding_curve_complete": False,  # When True, pump_fun_data stops being relevant
         },
-        "price_dollars": None,
-        "market_cap_dollars": None,
-        "decimals": None,
+        "price_dollars": 0,
+        "market_cap_dollars": 0,
+        "decimals": 0,
         "name": None,
         "symbol": None,
         "description": None,
         "metadata_uri": None,
-        "is_mutable": None,
-        "supply": None,  # Without decimals, in base form (int)
-        "refresh_timestamp": None,
+        "is_mutable": False,
+        "supply": 0,  # Without decimals, in base form (int)
+        "refresh_timestamp": 0,
         "price_history": [],  # List of {timestamp: int, price: float}
         "price_change": {"5m": 0.0, "30m": 0.0, "24h": 0.0},
     }
@@ -279,13 +284,28 @@ class TokenDB:
 
     async def get_tokens(self, mints: List[str]) -> List[dict]:
         tokens = {}
+        new_mints = []
         for mint in mints:
             token = await self.get_token(mint)
             if token:
                 tokens[mint] = token
             else:
-                tokens[mint] = await self.add_token(mint)
+                new_mints.append(mint)
+        
+        if new_mints:
+            new_tokens = await self.add_tokens(new_mints)
+            tokens.update(new_tokens)
+        
         return tokens
+
+    async def add_tokens(self, mints: List[str]) -> Dict[str, dict]:
+        new_tokens = {}
+        for mint in mints:
+            token = await self.add_token(mint, update_price=False)
+            new_tokens[mint] = token
+        
+        await self.update_price(list(new_tokens.keys()))        
+        return new_tokens
 
     async def get_token_decimals(self, mint: str) -> int:
         token = self.tokens.find_one({"_id": mint}, {"decimals": 1})
@@ -311,7 +331,7 @@ class TokenDB:
         prices = {}
         tokens = self.tokens.find({"_id": {"$in": mints}}, {"price_dollars": 1, "refresh_timestamp": 1})
         for token in tokens:
-            prices[token["_id"]] = token.get("price_dollars", None)
+            prices[token["_id"]] = token.get("price_dollars", 0)
         # Filter out mints that were not found in the database
         missing_mints = set(mints) - set(prices.keys())
         # if missing_mints:
@@ -415,9 +435,13 @@ class TokenDB:
             token = tokens[ix]
             mint = token["mint"]
             if mint not in price_info:  # Fetch price info by internally creating a quote
-                amm = await get_pool_id_by_mint(WRAPPED_SOL, Pubkey.from_string(mint))
-                quote = await get_quote_info_from_pool(WRAPPED_SOL, 0.000001, amm)
-                price = sol_dollar_value() / quote["current_price"]
+                try:
+                    amm = await get_pool_id_by_mint(WRAPPED_SOL, Pubkey.from_string(mint))
+                    quote = await get_quote_info_from_pool(WRAPPED_SOL, 0.000001, amm)
+                    price = sol_dollar_value() / quote["current_price"]
+                except Exception as e:
+                    logger.info(f"Failed fetching price from raydium for {mint}")
+                    price = 0
             else:
                 price = price_info[mint]["price"]
 
@@ -435,7 +459,7 @@ class TokenDB:
                     return None
                 return await response.json()
 
-    async def add_token(self, mint: str):
+    async def add_token(self, mint: str, update_price=True):
         token = await self.get_token(mint)
         if token:
             return token
@@ -459,7 +483,10 @@ class TokenDB:
                 }
             )
             await self.update_token(token)
-            return await self.update_price(mint)
+            if update_price:
+                return await self.update_price(mint)
+            else:
+                return token
 
         token.update(
             {
@@ -488,7 +515,11 @@ class TokenDB:
                 }
             )
             await self.update_token(token)
-            return await self.update_price(mint)
+            if update_price:
+                return await self.update_price(mint)
+            else:
+                return token
+            
         else:
             return await self.update_pump_fun_token(mint, token=token)
 
