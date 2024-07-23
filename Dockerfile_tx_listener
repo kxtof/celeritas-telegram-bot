@@ -10,10 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application's code
 COPY celeritas/ ./celeritas/
-COPY run_tx_listener.py .
 
 # Create a directory for persistent cache data
 RUN mkdir -p /app/data
 
 # Run the application
-CMD ["python", "run_tx_listener.py"]
+CMD ["python", "-m", "celeritas.tx_listener"]

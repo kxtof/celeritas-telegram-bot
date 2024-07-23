@@ -6,8 +6,8 @@ services:
     container_name: celeritas_mongodb
     ports:
       - "${MONGO_PORT:-27017}:27017"
-#    volumes:
-#      - ./data/mongo_data:/data/db
+    volumes:
+      - ./data/mongo_data:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
@@ -23,7 +23,6 @@ services:
     volumes:
       - ./data:/app/data
     network_mode: "host"
-    command: python run_telegram_bot.py
     depends_on: 
       - mongodb
     environment:
@@ -48,7 +47,7 @@ services:
     volumes:
       - ./data:/app/data
     network_mode: "host"
-    command: python run_tx_listener.py
+    profiles: [full]
     depends_on: 
       - mongodb
     environment:
@@ -61,26 +60,23 @@ services:
       - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
     restart: unless-stopped
 
-#  pump_fun_sniper:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile_pump_fun_sniper
-#    container_name: celeritas_pump_fun_sniper
-#    network_mode: "host"
-#    command: python run_pump_fun_sniper.py
-#    volumes:
-#      - ./data:/app/data
-#    depends_on: 
-#      - mongodb
-#    environment:
-#      - TELEGRAM_BOT_TOKEN
-#      - SOLANA_RPC_URL
-#      - SOLANA_WS_URL
-#      - PLATFORM_FEE_PUBKEY
-#      - ADMIN_TELEGRAM_ACCOUNT_ID
-#      - MAX_REQUESTS_PER_SECOND
-#      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
-#    restart: unless-stopped
-
-#volumes:
-#  mongo_data:
+  pump_fun_sniper:
+    build:
+      context: .
+      dockerfile: Dockerfile_pump_fun_sniper
+    container_name: celeritas_pump_fun_sniper
+    network_mode: "host"
+    profiles: [full]
+    volumes:
+      - ./data:/app/data
+    depends_on: 
+      - mongodb
+    environment:
+      - TELEGRAM_BOT_TOKEN
+      - SOLANA_RPC_URL
+      - SOLANA_WS_URL
+      - PLATFORM_FEE_PUBKEY
+      - ADMIN_TELEGRAM_ACCOUNT_ID
+      - MAX_REQUESTS_PER_SECOND
+      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:${MONGO_PORT:-27017}
+    restart: unless-stopped

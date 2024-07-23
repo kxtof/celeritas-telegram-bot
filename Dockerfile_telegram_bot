@@ -13,7 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application's code
 COPY celeritas/ ./celeritas/
-COPY run_telegram_bot.py .
 
 # Create a directory for persistent cache data
 RUN mkdir -p /app/data
@@ -25,4 +24,4 @@ RUN openssl req -newkey rsa:2048 -sha256 -noenc -keyout private.key -x509 -days 
 #COPY cert.pem .
 
 # Run the application
-CMD ["python", "run_telegram_bot.py"]
+CMD ["python", "-m", "celeritas.telegram_bot.bot"]

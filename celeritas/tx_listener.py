@@ -188,3 +188,6 @@ async def main():
         logger.error("An exception has occurred in subscribe_blocks() of tx_listener:", e)
     finally:
         logger.info("Shutdown complete.")
+
+if __name__ == "__main__":
+    asyncio.run(main()) 

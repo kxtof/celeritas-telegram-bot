@@ -262,3 +262,6 @@ async def main():
     finally:
         refresh_task.cancel()  # Cancel the cache refresh task
         logger.info("Shutdown complete.")
+
+if __name__ == "__main__":
+    asyncio.run(main()) 

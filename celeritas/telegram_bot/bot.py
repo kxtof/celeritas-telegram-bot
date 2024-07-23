@@ -384,3 +384,6 @@ def main() -> None:
             url_path=config.telegram_bot_token,
             webhook_url=f"https://{config.webhook_url}:{config.webhook_port}/{config.telegram_bot_token}"
         )
+
+if __name__ == "__main__":
+    main()
