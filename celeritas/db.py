@@ -301,6 +301,7 @@ class TokenDB:
     async def add_tokens(self, mints: List[str]) -> Dict[str, dict]:
         new_tokens = {}
         for mint in mints:
+            logger.info(f"adding {mint}")
             token = await self.add_token(mint, update_price=False)
             new_tokens[mint] = token
         

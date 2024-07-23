@@ -55,16 +55,16 @@ async def generate_menu_keyboard(user, tokens, page, last, action_type) -> Inlin
 
 async def get_paginated_tokens(user, page, tokens_per_page, action_type):
     token_prices = await token_db.get_prices(list(user.holdings.keys()))
-    # Sort based on dollar value of holding while filtering out tokens without sufficient min_pos_value
+    # Sort based on dollar value of holding
     tokens_by_value = [
-        t
+        (t, h*token_prices.get(t, 0))
         for t, h in sorted(user.holdings.items(), key=lambda x: -x[1] * token_prices.get(x[0], 0))
-        if h * token_prices.get(t, 0) > user.settings.min_pos_value
     ]
     if action_type == "withdraw":
         tokens_by_value.insert(0, "SOL")
     start, end = page * tokens_per_page, (page + 1) * tokens_per_page
-    return tokens_by_value[start:end], len(tokens_by_value) <= end
+    # filter out tokens with insufficient holding value
+    return [t for t, h in tokens_by_value if h > user.settings.min_pos_value][start:end], len(tokens_by_value) <= end
 
 
 async def generate_token_text(user, token, token_info, sol=True):
@@ -151,10 +151,17 @@ async def refresh_sell_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     user_db.update_user_holdings(user_id)
     user = user_db.get_user(user_id)
     page = context.user_data.get("sell_menu_page", 0)
-    tokens_by_amount = [t[0] for t in sorted(user.holdings.items(), key=lambda x: -x[1])]
+        
+    token_prices = await token_db.get_prices(list(user.holdings.keys()))
+    # Sort based on dollar value of holding
+    tokens_by_value = [
+        t for t, h in sorted(user.holdings.items(), key=lambda x: -x[1] * token_prices.get(x[0], 0))
+    ]
+    #tokens_by_amount = [t[0] for t in sorted(user.holdings.items(), key=lambda x: -x[1])]
+    
     start = page * TOKENS_PER_PAGE
     end = start + TOKENS_PER_PAGE
-    await token_db.update_price(tokens_by_amount[start:end])
+    await token_db.update_price(tokens_by_value[start:end])
     return await sell_menu(update, context, page=page, new=False)
 
 
