@@ -96,6 +96,7 @@ async def update_message(message_info, tx, block_time):
         parse_mode='HTML',
         disable_web_page_preview=True,
     )
+    return parsed_tx_data
 
 async def unsubscribe():
     if websocket_connection and subscription_id:
@@ -145,13 +146,21 @@ async def subscribe_blocks():
 
                     message_info = await transaction_db.fetch_transaction(sig)
                     if not message_info: continue
-                    await update_message(
+                    tx_data = await update_message(
                         message_info,
                         tx,
                         data['params']['result']['value']['block']['blockTime']
                     )
-
                     await transaction_db.delete_transaction(sig)
+                    # Update db
+                    if tx_data:
+                        user_id = message_info['user_id']
+                        user = user_db.get_user(user_id)
+                        user.transactions.append(tx_data)
+                        user.revenue += tx_data["fee_paid"]
+                        user_db.update_attribute(user_id, "revenue", user.revenue)
+                        user_db.update_attribute(user_id, "transactions", user.transactions)
+                        update_fees(user.referrer, tx_data["fee_paid"], 0)
 
             if "result" in data and "id" in data and data["id"] == 1:
                 subscription_id = data["result"]

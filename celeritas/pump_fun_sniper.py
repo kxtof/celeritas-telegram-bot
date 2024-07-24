@@ -11,8 +11,9 @@ from telegram.ext import Application
 from telegram.ext import CallbackContext
 
 from celeritas.config import config
-from celeritas.constants import SOLANA_WS_URL
+from celeritas.constants import SOLANA_WS_URL, aclient
 from celeritas.db import user_db
+from celeritas.db import transaction_db
 from celeritas.telegram_bot.fetch_tx_update_msg import schedule_tx_update
 from celeritas.telegram_bot.utils import nice_float_price_format as nfpf
 from celeritas.transact import Transact
@@ -92,12 +93,11 @@ async def snipe_for_user(user, sniping_setup, mint, bonding_curve, associated_bo
             txs = Signature.from_string(
                 "3SriJZqAYe1jGbUGGCEwGkriJJBVsf5PdaGwtwTm3jtTdF1AVfBGWL2dgodKrySKWcSBZShcNetyar7GfmvCSy7S"
             )
-            fee = (0.9 if user["referrer"] else 1) * (min_sol_cost + max_sol_cost) / 2
+            fee = (0.9 if user["referrer"] else 1) * 0.01 * (min_sol_cost + max_sol_cost) / 2
             # txs = await transact.construct_and_send(
             #    quote,
             #    fee=fee # add transaction fee
             # )
-
         if txs:
             text = (
                 f"🚀 <b>Snipe order for {nfpf(output_amount)} sent!</b>\n\n"
@@ -115,16 +115,8 @@ async def snipe_for_user(user, sniping_setup, mint, bonding_curve, associated_bo
                 chat_id=user["_id"], text=text, parse_mode="HTML", disable_web_page_preview=True
             )
 
-            # Schedule transaction update
-            await schedule_tx_update(
-                CallbackContext(application, message.chat_id, user["_id"]),
-                message.chat_id,
-                message.message_id,
-                user["_id"],
-                txs,
-                mint,
-                user["wallet_public"],
-            )
+            await transaction_db.insert_transaction(user['_id'], user['wallet_public'], message.message_id, str(txs), mint, int(time.time()))
+            #await schedule_tx_update(CallbackContext(application, message.chat_id, user["_id"]), message.chat_id, message.message_id, user["_id"], txs, mint, user["wallet_public"])
 
             return f"Success {user['_id']}: {txs}"
         else:

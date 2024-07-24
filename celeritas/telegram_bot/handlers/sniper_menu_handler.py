@@ -308,7 +308,7 @@ async def process_custom_input_sniper(update: Update, context: ContextTypes.DEFA
         elif option == "amount":
             value = max(0.002, value)
         elif option == "priority_fee":
-            value = max(0.01, value)
+            value = max(0.001, value)
 
         setup_index = context.user_data["setup_index"]
         user = user_db.get_user(user_id)

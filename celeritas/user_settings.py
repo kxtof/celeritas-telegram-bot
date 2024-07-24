@@ -4,7 +4,7 @@ import json
 class User_settings:
     def __init__(
         self,
-        priority_fee=0.008,
+        priority_fee=0.0015,
         buy_amounts=[0.5, 1, 3, 5, 10],
         buy_slippage=20,
         sell_amounts=[20, 50, 100],

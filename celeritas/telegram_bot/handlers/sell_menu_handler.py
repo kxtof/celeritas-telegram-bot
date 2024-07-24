@@ -61,7 +61,7 @@ async def get_paginated_tokens(user, page, tokens_per_page, action_type):
         for t, h in sorted(user.holdings.items(), key=lambda x: -x[1] * token_prices.get(x[0], 0))
     ]
     if action_type == "withdraw":
-        tokens_by_value.insert(0, "SOL")
+        tokens_by_value.insert(0, ("SOL",1e20)) # unreasonably large number
     start, end = page * tokens_per_page, (page + 1) * tokens_per_page
     # filter out tokens with insufficient holding value
     return [t for t, h in tokens_by_value if h > user.settings.min_pos_value][start:end], len(tokens_by_value) <= end
