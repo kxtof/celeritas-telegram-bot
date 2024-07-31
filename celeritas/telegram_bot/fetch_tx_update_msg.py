@@ -101,6 +101,13 @@ def generate_failure_message(tx_signature: str) -> str:
     )
 
 
+def generate_tx_invalid_message(tx_signature: str) -> str:
+    return (
+        "😅 <b>Oops! Your transaction seems to have failed...</b>\n\n"
+        f"🔎 Tx details: <a href='https://solscan.io/tx/{tx_signature}'>View on Solscan</a>"
+    )
+
+
 async def check_transaction(
     context: ContextTypes.DEFAULT_TYPE,
     attempt: int,
@@ -131,6 +138,15 @@ async def check_transaction(
             chat_id=chat_id,
             message_id=message_id,
             text=generate_success_message(str(tx_signature), tx_data),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+        return True
+    elif tx.value.transaction.meta.err:
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=generate_tx_invalid_message(str(tx_signature)),
             parse_mode="HTML",
             disable_web_page_preview=True,
         )

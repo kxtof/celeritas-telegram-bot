@@ -115,8 +115,8 @@ async def snipe_for_user(user, sniping_setup, mint, bonding_curve, associated_bo
                 chat_id=user["_id"], text=text, parse_mode="HTML", disable_web_page_preview=True
             )
 
-            await transaction_db.insert_transaction(user['_id'], user['wallet_public'], message.message_id, str(txs), mint, int(time.time()))
-            #await schedule_tx_update(CallbackContext(application, message.chat_id, user["_id"]), message.chat_id, message.message_id, user["_id"], txs, mint, user["wallet_public"])
+            #await transaction_db.insert_transaction(user['_id'], user['wallet_public'], message.message_id, str(txs), mint, int(time.time()))
+            await schedule_tx_update(CallbackContext(application, message.chat_id, user["_id"]), message.chat_id, message.message_id, user["_id"], txs, mint, user["wallet_public"])
 
             return f"Success {user['_id']}: {txs}"
         else:
@@ -202,7 +202,7 @@ async def subscribe_blocks():
                 if "params" in data:
                     data = parse_block(data)
                     for mint, wallet, time_diff, bonding_curve, associated_bonding_curve in data:
-                        logger.info(f'Received mint "{mint}" with time delta of {time_diff:.2f}')
+                        logger.info(f'Received mint "{mint}", delta: {time_diff:.2f} sec')
                         wallet = "EiKviBF8WYxqYEoS1QuyoNobs7qTr6GvYftUNzZhakeE"  # testing
                         if wallet not in watched_wallets:
                             continue

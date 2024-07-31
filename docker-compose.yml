@@ -66,7 +66,7 @@ services:
       dockerfile: Dockerfile_pump_fun_sniper
     container_name: celeritas_pump_fun_sniper
     network_mode: "host"
-    profiles: [full]
+    profiles: [full, no_transaction_listener]
     volumes:
       - ./data:/app/data
     depends_on: 

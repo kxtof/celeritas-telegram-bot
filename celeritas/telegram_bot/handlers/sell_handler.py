@@ -395,10 +395,10 @@ async def process_sell(update: Update, context: ContextTypes.DEFAULT_TYPE, delet
 
     await message.edit_text(text=text, parse_mode="HTML", disable_web_page_preview=True)
     if txs:
-        await transaction_db.insert_transaction(user.id, user.wallet_public, message.message_id, str(txs), mint, int(time.time()))
-        #await schedule_tx_update(
-        #    context, message.chat_id, message.message_id, user_id, txs, mint, user.wallet_public
-        #)
+        #await transaction_db.insert_transaction(user.id, user.wallet_public, message.message_id, str(txs), mint, int(time.time()))
+        await schedule_tx_update(
+            context, message.chat_id, message.message_id, user_id, txs, mint, user.wallet_public
+        )
 
     return SELL_TOKEN
 
